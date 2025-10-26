@@ -17,6 +17,29 @@ const app = Vue.createApp({
         };
     },
     methods: {
+        loadEvents() {
+            try {
+                const stored = localStorage.getItem('events');
+                if (stored) {
+                    this.events = JSON.parse(stored);
+                    console.log('Loaded events from localStorage:', this.events);
+                } else {
+                    console.log('No events in localStorage, initializing empty array');
+                }
+            } catch (error) {
+                console.error('Error loading events from localStorage:', error);
+                this.events = [];
+            }
+        },
+        saveEvents() {
+            try {
+                localStorage.setItem('events', JSON.stringify(this.events));
+                console.log('Saved events to localStorage:', this.events);
+                console.log('localStorage events after save:', JSON.parse(localStorage.getItem('events')));
+            } catch (error) {
+                console.error('Error saving events to localStorage:', error);
+            }
+        },
         showEventForm() {
             this.showForm = !this.showForm;
             console.log('Add Event clicked, showForm:', this.showForm);
@@ -25,6 +48,7 @@ const app = Vue.createApp({
             this.events.push({ ...this.event });
             console.log('Event saved:', this.event);
             console.log('All events:', this.events);
+            this.saveEvents();
             this.showForm = false;
             this.event = { title: '', date: '', time: '', endTime: '', type: 'lesson' };
             this.updateCalendar();
@@ -33,35 +57,47 @@ const app = Vue.createApp({
             if (this.calendar) {
                 this.calendar.getEvents().forEach(event => event.remove());
                 this.events.forEach(event => {
-                    this.calendar.addEvent({
-                        title: `${event.title} (${event.type})`,
-                        start: `${event.date}T${event.time}`,
-                        end: event.endTime ? `${event.date}T${event.endTime}` : null,
-                        allDay: false,
-                        className: event.type
-                    });
+                    try {
+                        this.calendar.addEvent({
+                            title: `${event.title} (${event.type})`,
+                            start: `${event.date}T${event.time}`,
+                            end: event.endTime ? `${event.date}T${event.endTime}` : null,
+                            allDay: false,
+                            className: event.type
+                        });
+                    } catch (error) {
+                        console.error('Error adding event to calendar:', event, error);
+                    }
                 });
+                console.log('Calendar updated with events:', this.events);
             }
         },
         handleEventDrop(info) {
             const event = info.event;
-            const newStart = event.start.toISOString();
-            const newEnd = event.end ? event.end.toISOString() : null;
-            const [newDate, newTime] = newStart.split('T');
-            const startTime = newTime.split(':').slice(0, 2).join(':');
+            const newDate = event.start.toISOString().split('T')[0];
+            const startTime = event.start.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
             let endTime = null;
-            if (newEnd) {
-                const [, newEndTime] = newEnd.split('T');
-                endTime = newEndTime.split(':').slice(0, 2).join(':');
+            if (event.end) {
+                endTime = event.end.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
             }
-            console.log('Event dropped:', { title: event.title, date: newDate, startTime, endTime });
+            let matched = false;
             this.events = this.events.map(ev => {
-                if (`${ev.title} (${ev.type})` === event.title) {
+                const oldStart = new Date(`${ev.date}T${ev.time}`).toISOString().split('.')[0];
+                const oldEventStart = info.oldEvent.start.toISOString().split('.')[0];
+                console.log('Comparing:', { title: `${ev.title} (${ev.type})`, oldStart, oldEventStart });
+                if (`${ev.title} (${ev.type})` === event.title && oldStart === oldEventStart) {
+                    matched = true;
                     return { ...ev, date: newDate, time: startTime, endTime: endTime || ev.endTime };
                 }
                 return ev;
             });
+            if (!matched) {
+                console.error('No matching event found for drop:', { title: event.title, oldStart: info.oldEvent.start });
+            }
+            console.log('Event dropped:', { title: event.title, date: newDate, startTime, endTime });
             console.log('Updated events:', this.events);
+            this.saveEvents();
+            this.updateCalendar();
         },
         handleEventClick(info) {
             if (!window.bootstrap) {
@@ -74,6 +110,7 @@ const app = Vue.createApp({
                     );
                     console.log('Event deleted:', info.event.title);
                     console.log('Updated events:', this.events);
+                    this.saveEvents();
                 }
                 return;
             }
@@ -97,11 +134,14 @@ const app = Vue.createApp({
             this.editMode = false;
             const modalEl = document.getElementById('eventModal');
             if (modalEl) {
-                modalEl.setAttribute('aria-hidden', 'false');
                 const modal = new bootstrap.Modal(modalEl);
                 modal.show();
                 modalEl.addEventListener('hidden.bs.modal', () => {
+                    if (document.activeElement && modalEl.contains(document.activeElement)) {
+                        document.activeElement.blur();
+                    }
                     modalEl.setAttribute('aria-hidden', 'true');
+                    modalEl.setAttribute('inert', '');
                 }, { once: true });
             } else {
                 console.error('Modal element not found');
@@ -116,10 +156,15 @@ const app = Vue.createApp({
                 );
                 console.log('Event deleted:', this.selectedEvent.originalTitle);
                 console.log('Updated events:', this.events);
+                this.saveEvents();
                 const modalEl = document.getElementById('eventModal');
                 if (modalEl && window.bootstrap) {
                     const modal = bootstrap.Modal.getInstance(modalEl);
-                    if (modal) modal.hide();
+                    if (modal) {
+                        modal.hide();
+                        document.querySelector('body').focus();
+                        modalEl.setAttribute('inert', '');
+                    }
                 }
             }
         },
@@ -139,11 +184,16 @@ const app = Vue.createApp({
                 });
                 console.log('Event updated:', this.selectedEvent);
                 console.log('All events:', this.events);
+                this.saveEvents();
                 this.updateCalendar();
                 const modalEl = document.getElementById('eventModal');
                 if (modalEl && window.bootstrap) {
                     const modal = bootstrap.Modal.getInstance(modalEl);
-                    if (modal) modal.hide();
+                    if (modal) {
+                        modal.hide();
+                        document.querySelector('body').focus();
+                        modalEl.setAttribute('inert', '');
+                    }
                 }
                 this.editMode = false;
             }
@@ -151,6 +201,8 @@ const app = Vue.createApp({
     },
     mounted() {
         console.log('FullCalendar available:', typeof window.FullCalendar);
+        this.loadEvents();
+        console.log('Events after load:', this.events);
         const calendarEl = document.getElementById('calendar');
         console.log('Calendar element:', calendarEl);
         if (calendarEl && window.FullCalendar) {
@@ -165,20 +217,28 @@ const app = Vue.createApp({
                 height: 'auto',
                 slotMinTime: '08:00:00',
                 slotMaxTime: '22:00:00',
-                events: this.events.map(event => ({
-                    title: `${event.title} (${event.type})`,
-                    start: `${event.date}T${event.time}`,
-                    end: event.endTime ? `${event.date}T${event.endTime}` : null,
-                    allDay: false,
-                    className: event.type
-                })),
+                events: this.events.map(event => {
+                    try {
+                        return {
+                            title: `${event.title} (${event.type})`,
+                            start: `${event.date}T${event.time}`,
+                            end: event.endTime ? `${event.date}T${event.endTime}` : null,
+                            allDay: false,
+                            className: event.type
+                        };
+                    } catch (error) {
+                        console.error('Error mapping event for calendar:', event, error);
+                        return null;
+                    }
+                }).filter(event => event !== null),
                 eventDrop: this.handleEventDrop.bind(this),
                 eventClick: this.handleEventClick.bind(this)
             });
             console.log('FullCalendar initialized:', this.calendar);
             this.calendar.render();
+            console.log('Calendar rendered');
         } else {
-            console.log('Calendar initialization failed: FullCalendar or element missing');
+            console.error('Calendar initialization failed: FullCalendar or element missing');
         }
     }
 }).mount('#app');
