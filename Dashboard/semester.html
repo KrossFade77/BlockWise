@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semester Setup</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; }
+        .form-container { max-width: 500px; margin: auto; }
+        .error { color: red; display: none; }
+        .error.show { display: block; }
+    </style>
+</head>
+<body>
+    <div id="app" class="form-container">
+        <h2>Semester Setup</h2>
+        <form @submit.prevent="saveSemester">
+            <div class="mb-3">
+                <label for="startDate" class="form-label">Semester Start Date</label>
+                <input type="date" class="form-control" id="startDate" v-model="semester.startDate" required>
+            </div>
+            <div class="mb-3">
+                <label for="endDate" class="form-label">Semester End Date</label>
+                <input type="date" class="form-control" id="endDate" v-model="semester.endDate" required>
+            </div>
+            <div class="error" :class="{ show: error }">{{ error }}</div>
+            <button type="submit" class="btn btn-primary">Save Semester</button>
+            <a href="dashboard.html" class="btn btn-secondary">Go to Dashboard</a>
+        </form>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.2.37/dist/vue.global.prod.js"></script>
+    <script>
+        const app = Vue.createApp({
+            data() {
+                return {
+                    semester: {
+                        startDate: '2025-08-01',
+                        endDate: '2025-11-30'
+                    },
+                    error: ''
+                };
+            },
+            methods: {
+                saveSemester() {
+                    if (!this.semester.startDate || !this.semester.endDate) {
+                        this.error = 'Please fill in both dates.';
+                        return;
+                    }
+                    if (new Date(this.semester.endDate) < new Date(this.semester.startDate)) {
+                        this.error = 'End date must be after start date.';
+                        return;
+                    }
+                    try {
+                        localStorage.setItem('semester', JSON.stringify(this.semester));
+                        console.log('Semester saved to localStorage:', this.semester);
+                        window.location.href = 'dashboard.html';
+                    } catch (error) {
+                        console.error('Error saving semester to localStorage:', error);
+                        this.error = 'Failed to save semester dates.';
+                    }
+                }
+            },
+            mounted() {
+                const stored = localStorage.getItem('semester');
+                if (stored) {
+                    this.semester = JSON.parse(stored);
+                    console.log('Loaded semester from localStorage:', this.semester);
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

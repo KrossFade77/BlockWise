@@ -13,7 +13,8 @@ const app = Vue.createApp({
             calendar: null,
             selectedEvent: {},
             selectedEventElement: null,
-            editMode: false
+            editMode: false,
+            semester: { startDate: '', endDate: '' }
         };
     },
     methods: {
@@ -31,6 +32,19 @@ const app = Vue.createApp({
                 this.events = [];
             }
         },
+        loadSemester() {
+            try {
+                const stored = localStorage.getItem('semester');
+                if (stored) {
+                    this.semester = JSON.parse(stored);
+                    console.log('Loaded semester from localStorage:', this.semester);
+                } else {
+                    console.log('No semester in localStorage, initializing empty');
+                }
+            } catch (error) {
+                console.error('Error loading semester from localStorage:', error);
+            }
+        },
         saveEvents() {
             try {
                 localStorage.setItem('events', JSON.stringify(this.events));
@@ -45,13 +59,24 @@ const app = Vue.createApp({
             console.log('Add Event clicked, showForm:', this.showForm);
         },
         addEvent() {
-            this.events.push({ ...this.event });
-            console.log('Event saved:', this.event);
-            console.log('All events:', this.events);
-            this.saveEvents();
-            this.showForm = false;
-            this.event = { title: '', date: '', time: '', endTime: '', type: 'lesson' };
-            this.updateCalendar();
+            if (this.isEventWithinSemester(this.event.date)) {
+                this.events.push({ ...this.event });
+                console.log('Event saved:', this.event);
+                console.log('All events:', this.events);
+                this.saveEvents();
+                this.showForm = false;
+                this.event = { title: '', date: '', time: '', endTime: '', type: 'lesson' };
+                this.updateCalendar();
+            } else {
+                alert('Event date is outside the semester period.');
+            }
+        },
+        isEventWithinSemester(date) {
+            if (!this.semester.startDate || !this.semester.endDate) return true;
+            const eventDate = new Date(date);
+            const startDate = new Date(this.semester.startDate);
+            const endDate = new Date(this.semester.endDate);
+            return eventDate >= startDate && eventDate <= endDate;
         },
         updateCalendar() {
             if (this.calendar) {
@@ -80,9 +105,14 @@ const app = Vue.createApp({
             if (event.end) {
                 endTime = event.end.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
             }
+            if (!this.isEventWithinSemester(newDate)) {
+                alert('Cannot move event outside semester period.');
+                info.revert();
+                return;
+            }
             let matched = false;
             this.events = this.events.map(ev => {
-                const oldStart = new Date(`${ev.date}T${ev.time}`).toISOString().split('.')[0];
+                const oldStart = new Date(`${ev.date}T${ev.time}+08:00`).toISOString().split('.')[0];
                 const oldEventStart = info.oldEvent.start.toISOString().split('.')[0];
                 console.log('Comparing:', { title: `${ev.title} (${ev.type})`, oldStart, oldEventStart });
                 if (`${ev.title} (${ev.type})` === event.title && oldStart === oldEventStart) {
@@ -170,6 +200,10 @@ const app = Vue.createApp({
         },
         saveEditedEvent() {
             if (this.selectedEventElement) {
+                if (!this.isEventWithinSemester(this.selectedEvent.date)) {
+                    alert('Cannot edit event to a date outside semester period.');
+                    return;
+                }
                 this.selectedEventElement.remove();
                 this.events = this.events.filter(ev => 
                     `${ev.title} (${ev.type})` !== this.selectedEvent.originalTitle ||
@@ -202,6 +236,7 @@ const app = Vue.createApp({
     mounted() {
         console.log('FullCalendar available:', typeof window.FullCalendar);
         this.loadEvents();
+        this.loadSemester();
         console.log('Events after load:', this.events);
         const calendarEl = document.getElementById('calendar');
         console.log('Calendar element:', calendarEl);
@@ -217,6 +252,10 @@ const app = Vue.createApp({
                 height: 'auto',
                 slotMinTime: '08:00:00',
                 slotMaxTime: '22:00:00',
+                validRange: {
+                    start: this.semester.startDate || undefined,
+                    end: this.semester.endDate ? new Date(new Date(this.semester.endDate).setDate(new Date(this.semester.endDate).getDate() + 1)).toISOString().split('T')[0] : undefined
+                },
                 events: this.events.map(event => {
                     try {
                         return {

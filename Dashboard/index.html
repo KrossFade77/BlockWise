@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Firebase</title>
+    <title>Welcome to BlockWise</title>
 
     <!-- update the version number as needed -->
     <script defer src="/__/firebase/12.4.0/firebase-app-compat.js"></script>
@@ -42,7 +42,7 @@
     <!-- temp link dump -->
     <div id="message">
       <h1>links to webpage</h1>
-      <a href="./dashboard.html">dashboard</a>
+      <a href="./semester.html">semester</a>
     </div>
 
     <div id="message">
@@ -70,7 +70,6 @@
         // firebase.performance(); // call to activate
         //
         // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-
         try {
           let app = firebase.app();
           let features = [
@@ -88,6 +87,12 @@
         } catch (e) {
           console.error(e);
           loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
+        }
+        // Redirect regardless of Firebase initialization
+        if (!localStorage.getItem('semester')) {
+            window.location.href = 'semester.html';
+        } else {
+            window.location.href = 'dashboard.html';
         }
       });
     </script>
