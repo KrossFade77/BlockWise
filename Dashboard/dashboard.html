@@ -26,28 +26,32 @@
                 Generate Schedule
             </button> -->
         </div>
-        <!-- ADDED: Global Scheduler Config -->
-        <div v-if="showConfig" class="card p-3 mb-4"> <!-- ADDED -->
-            <h5>Scheduler Configuration</h5>
+        <!-- Global Scheduler Config -->
+        <div v-if="showConfig" class="card p-3 mb-4"> 
+            <h5>Scheduler Settings</h5>
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Daily Study Start</label>
-                    <input type="time" class="form-control" v-model="schedulerConfig.dailyStart"> <!-- ADDED -->
+                    <input type="time" class="form-control" v-model="schedulerConfig.dailyStart"> 
                 </div>
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Daily Study End</label>
-                    <input type="time" class="form-control" v-model="schedulerConfig.dailyEnd"> <!-- ADDED -->
+                    <input type="time" class="form-control" v-model="schedulerConfig.dailyEnd"> 
                 </div>
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Min Study Duration (mins)</label>
-                    <input type="number" class="form-control" v-model.number="schedulerConfig.minStudyDuration"> <!-- ADDED -->
+                    <input type="number" class="form-control" v-model.number="schedulerConfig.minStudyDuration"> 
                 </div>
                 <div class="col-md-6 mb-3">
                     <label class="form-label">Max Study Duration (mins)</label>
-                    <input type="number" class="form-control" v-model.number="schedulerConfig.maxStudyDuration"> <!-- ADDED -->
+                    <input type="number" class="form-control" v-model.number="schedulerConfig.maxStudyDuration"> 
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Weeks to generate</label>
+                    <input type="number" min="1" max="16" class="form-control" v-model.number="schedulerConfig.weeksToGenerate" placeholder="e.g., 4">
                 </div>
             </div>
-            <button class="btn btn-primary" @click="saveSchedulerConfig">Save Config</button> <!-- ADDED -->
+            <button class="btn btn-primary" @click="saveSchedulerConfig">Save Config</button> 
         </div>
 
 
@@ -80,23 +84,22 @@
                     </select>
                 </div>
 
-                <!-- ADDED: Extra fields for lesson events -->
                 <div v-if="event.type === 'lesson'">
                     <div class="mb-3">
                         <label class="form-label">Course Code</label>
-                        <input type="text" class="form-control" v-model="event.courseCode" required> <!-- ADDED -->
+                        <input type="text" class="form-control" v-model="event.courseCode" required> 
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Course Name</label>
-                        <input type="text" class="form-control" v-model="event.courseName" required> <!-- ADDED -->
+                        <input type="text" class="form-control" v-model="event.courseName" required> 
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Module Weight (1–5)</label>
-                        <input type="number" class="form-control" v-model.number="event.weightage" min="1" max="5" required> <!-- ADDED -->
+                        <input type="number" class="form-control" v-model.number="event.weightage" min="1" max="5" required> 
                     </div>
                     <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="repeatWeekly" v-model="event.repeatWeekly"> <!-- ADDED -->
-                        <label class="form-check-label" for="repeatWeekly">Repeat Weekly</label> <!-- ADDED -->
+                        <input class="form-check-input" type="checkbox" id="repeatWeekly" v-model="event.repeatWeekly"> 
+                        <label class="form-check-label" for="repeatWeekly">Repeat Weekly</label> 
                     </div>
                 </div>
 
