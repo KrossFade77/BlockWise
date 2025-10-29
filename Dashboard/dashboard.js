@@ -7,14 +7,16 @@ const app = Vue.createApp({
                 date: '',
                 time: '',
                 endTime: '',
-                type: 'lesson'
+                type: 'lesson',
+                repeat: false,
+                repeatDay: '1'  // Monday by default
             },
             events: [],
             calendar: null,
             selectedEvent: {},
             selectedEventElement: null,
             editMode: false,
-            semester: { startDate: '', endDate: '' }
+            semester: { startDate: '', endDate: '' },
         };
     },
     methods: {
@@ -59,17 +61,51 @@ const app = Vue.createApp({
             console.log('Add Event clicked, showForm:', this.showForm);
         },
         addEvent() {
-            if (this.isEventWithinSemester(this.event.date)) {
-                this.events.push({ ...this.event });
-                console.log('Event saved:', this.event);
-                console.log('All events:', this.events);
-                this.saveEvents();
-                this.showForm = false;
-                this.event = { title: '', date: '', time: '', endTime: '', type: 'lesson' };
-                this.updateCalendar();
-            } else {
+            if (!this.isEventWithinSemester(this.event.date)) {
                 alert('Event date is outside the semester period.');
+                return;
             }
+
+            const baseEvent = {
+                title: this.event.title,
+                date: this.event.date,
+                time: this.event.time,
+                endTime: this.event.endTime,
+                type: this.event.type
+            };
+
+            const eventsToAdd = [];
+
+            if (this.event.repeat) {
+                // Generate weekly events
+                const start = new Date(this.event.date);
+                const end = new Date(this.semester.endDate);
+                const day = parseInt(this.event.repeatDay);
+
+                let current = new Date(start);
+                current.setDate(current.getDate() + ((day - current.getDay() + 7) % 7));
+
+                while (current <= end) {
+                if (this.isEventWithinSemester(current.toISOString().split('T')[0])) {
+                    eventsToAdd.push({
+                    ...baseEvent,
+                    date: current.toISOString().split('T')[0],
+                    isRecurring: true,
+                    originalDate: this.event.date
+                    });
+                }
+                current.setDate(current.getDate() + 7);
+                }
+            } else {
+                eventsToAdd.push(baseEvent);
+            }
+
+            this.events.push(...eventsToAdd);
+            console.log('Added recurring events:', eventsToAdd);
+            this.saveEvents();
+            this.showForm = false;
+            this.event = { title: '', date: '', time: '', endTime: '', type: 'lesson', repeat: false, repeatDay: '1' };
+            this.updateCalendar();
         },
         isEventWithinSemester(date) {
             if (!this.semester.startDate || !this.semester.endDate) return true;

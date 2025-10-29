@@ -35,6 +35,22 @@
                         <option value="lesson">Lesson</option>
                         <option value="non-lesson">Non-Lesson</option>
                     </select>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="repeatWeekly" v-model="event.repeat">
+                        <label class="form-check-label" for="repeatWeekly">Repeat weekly</label>
+                        </div>
+                        <div class="mb-3" v-if="event.repeat">
+                        <label for="repeatDay" class="form-label">Repeat on</label>
+                        <select class="form-select" id="repeatDay" v-model="event.repeatDay">
+                            <option value="0">Sunday</option>
+                            <option value="1">Monday</option>
+                            <option value="2">Tuesday</option>
+                            <option value="3">Wednesday</option>
+                            <option value="4">Thursday</option>
+                            <option value="5">Friday</option>
+                            <option value="6">Saturday</option>
+                        </select>
+                        </div>
                 </div>
                 <button type="submit" class="btn btn-primary">Save Event</button>
                 <button type="button" class="btn btn-secondary ms-2" @click="showForm = false">Cancel</button>
