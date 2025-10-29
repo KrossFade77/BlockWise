@@ -27,3 +27,19 @@
     font-size: 14px;
     padding: 2px 4px;
 }
+
+.fc-event.review-session {
+    background-color: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+}
+
+/* Icons in title */
+.fc-event-title::before {
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    margin-right: 5px;
+}
+.lesson .fc-event-title::before { content: "\f02d"; }     /* book */
+.non-lesson .fc-event-title::before { content: "\f005"; } /* star */
+.review-session .fc-event-title::before { content: "\f0f3"; } /* bell */

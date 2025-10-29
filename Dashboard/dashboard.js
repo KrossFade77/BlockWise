@@ -135,7 +135,10 @@ const app = Vue.createApp({
                 date: this.event.date,
                 time: this.event.time,
                 endTime: this.event.endTime,
-                type: this.event.type
+                type: this.event.type,
+                courseCode: this.event.courseCode || '',
+                courseName: this.event.courseName || '',
+                weightage: this.event.weightage || 1
             };
 
             const eventsToAdd = [];
@@ -168,7 +171,18 @@ const app = Vue.createApp({
             console.log('Added recurring events:', eventsToAdd);
             this.saveEvents();
             this.showForm = false;
-            this.event = { title: '', date: '', time: '', endTime: '', type: 'lesson', repeat: false, repeatDay: '1' };
+            this.event = { 
+                title: '', 
+                date: '', 
+                time: '', 
+                endTime: '', 
+                type: 'lesson', 
+                courseCode: '',
+                courseName: '',
+                weightage: 1,
+                repeat: false, 
+                repeatDay: '1' 
+            };
             this.updateCalendar();
         },
         isEventWithinSemester(date) {
