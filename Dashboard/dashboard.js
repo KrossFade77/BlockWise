@@ -20,7 +20,8 @@ const app = Vue.createApp({
                 dailyStart: '10:00',
                 dailyEnd: '22:00',
                 minStudyDuration: 30,
-                // maxStudyDuration: 120
+                // maxStudyDuration: 120,
+                weeksToGenerate: 4
             },
             calendar: null,
             selectedEvent: {},
@@ -77,7 +78,8 @@ const app = Vue.createApp({
                     this.schedulerConfig = {
                         dailyStart: '10:00',
                         dailyEnd: '22:00',
-                        minStudyDuration: 30
+                        minStudyDuration: 30,
+                        weeksToGenerate: 4
                     }
                 }
             } catch (error) {
