@@ -3,6 +3,7 @@ const app = Vue.createApp({
         return {
             showForm: false,
             showConfig: false,
+            modalInstance: null,
             event: {
                 id: null,
                 title: '',
@@ -117,12 +118,6 @@ const app = Vue.createApp({
         showEventForm() {
             this.showForm = !this.showForm;
             console.log('Add Event clicked, showForm:', this.showForm);
-        },
-        calculateDuration() {
-            const [h1, m1] = start.split(':').map(Number);
-            const [h2, m2] = end.split(':').map(Number);
-            const minutes = (h2 * 60 + m2) - (h1 * 60 + m1);
-            return Math.max(0, minutes);
         },
         addEvent() {
             if (!this.isEventWithinSemester(this.event.date)) {
@@ -330,75 +325,72 @@ const app = Vue.createApp({
             this.selectedEventElement = event;
             this.editMode = false;
             const modalEl = document.getElementById('eventModal');
-            if (modalEl) {
-                const modal = new bootstrap.Modal(modalEl);
-                modal.show();
-                modalEl.addEventListener('hidden.bs.modal', () => {
-                    if (document.activeElement && modalEl.contains(document.activeElement)) {
-                        document.activeElement.blur();
-                    }
-                    modalEl.setAttribute('aria-hidden', 'true');
-                    modalEl.setAttribute('inert', '');
-                }, { once: true });
-            } else {
+            if (!modalEl) {
                 console.error('Modal element not found');
+                return;
             }
+
+            const modal = new bootstrap.Modal(modalEl, {
+                backdrop: 'static',
+                keyboard: false
+            });
+
+            this.modalInstance = modal;
+
+            modal.show();
+
+            modalEl.addEventListener('hidden.bs.modal', () => {
+                modal.dispose();
+                this.editMode = false;
+                this.selectedEvent = {};
+            }, { once: true });
         },
         deleteEvent() {
-            if (this.selectedEventElement) {
-                this.selectedEventElement.remove();
-                this.events = this.events.filter(ev => 
-                    `${ev.title} (${ev.type})` !== this.selectedEvent.originalTitle ||
-                    `${ev.date}T${ev.time}` !== this.selectedEvent.originalStart
-                );
-                console.log('Event deleted:', this.selectedEvent.originalTitle);
-                console.log('Updated events:', this.events);
-                this.saveEvents();
-                const modalEl = document.getElementById('eventModal');
-                if (modalEl && window.bootstrap) {
-                    const modal = bootstrap.Modal.getInstance(modalEl);
-                    if (modal) {
-                        modal.hide();
-                        document.querySelector('body').focus();
-                        modalEl.setAttribute('inert', '');
-                    }
-                }
+            if (!this.selectedEventElement) return;
+
+            this.selectedEventElement.remove();
+            this.events = this.events.filter(ev => 
+                `${ev.title} (${ev.type})` !== this.selectedEvent.originalTitle ||
+                `${ev.date}T${ev.time}` !== this.selectedEvent.originalStart
+            );
+            this.saveEvents();
+
+            if (this.modalInstance) {
+                this.modalInstance.hide();
             }
         },
+
         saveEditedEvent() {
-            if (this.selectedEventElement) {
-                if (!this.isEventWithinSemester(this.selectedEvent.date)) {
-                    alert('Cannot edit event to a date outside semester period.');
-                    return;
-                }
-                this.selectedEventElement.remove();
-                this.events = this.events.filter(ev => 
-                    `${ev.title} (${ev.type})` !== this.selectedEvent.originalTitle ||
-                    `${ev.date}T${ev.time}` !== this.selectedEvent.originalStart
-                );
-                this.events.push({
-                    title: this.selectedEvent.title,
-                    date: this.selectedEvent.date,
-                    time: this.selectedEvent.startTime,
-                    endTime: this.selectedEvent.endTime,
-                    type: this.selectedEvent.type
-                });
-                console.log('Event updated:', this.selectedEvent);
-                console.log('All events:', this.events);
-                this.saveEvents();
-                this.updateCalendar();
-                const modalEl = document.getElementById('eventModal');
-                if (modalEl && window.bootstrap) {
-                    const modal = bootstrap.Modal.getInstance(modalEl);
-                    if (modal) {
-                        modal.hide();
-                        document.querySelector('body').focus();
-                        modalEl.setAttribute('inert', '');
-                    }
-                }
-                this.editMode = false;
+            if (!this.selectedEventElement) return;
+
+            if (!this.isEventWithinSemester(this.selectedEvent.date)) {
+                alert('Cannot edit event to a date outside semester period.');
+                return;
             }
-        }
+
+            this.selectedEventElement.remove();
+            this.events = this.events.filter(ev => 
+                `${ev.title} (${ev.type})` !== this.selectedEvent.originalTitle ||
+                `${ev.date}T${ev.time}` !== this.selectedEvent.originalStart
+            );
+            this.events.push({
+                title: this.selectedEvent.title,
+                date: this.selectedEvent.date,
+                time: this.selectedEvent.startTime,
+                endTime: this.selectedEvent.endTime,
+                type: this.selectedEvent.type,
+                courseCode: this.selectedEvent.courseCode || '',
+                courseName: this.selectedEvent.courseName || '',
+                weightage: this.selectedEvent.weightage || 1
+            });
+            this.saveEvents();
+            this.updateCalendar();
+
+            if (this.modalInstance) {
+                this.modalInstance.hide();
+            }
+            this.editMode = false;
+        },
     },
     mounted() {
         console.log('FullCalendar available:', typeof window.FullCalendar);
