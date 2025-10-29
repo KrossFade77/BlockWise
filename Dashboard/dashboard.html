@@ -10,7 +10,53 @@
 <body>
     <div id="app" class="container my-5">
         <h1 class="mb-4">Event Calendar</h1>
-        <button class="btn btn-primary mb-3" @click="showEventForm">Add Event</button>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center gap-3">
+            <button class="btn btn-primary mb-3" @click="showEventForm">Add Event</button>
+            <button class="btn btn-success mb-3" @click="showConfig = !showConfig">Scheduler Settings</button>
+            </div>
+
+            <button class="btn btn-warning" @click="generateSchedule">Generate Schedule</button>
+            <!-- <button
+                class="btn btn-warning"
+                @click="generateSchedule"
+                :disabled="!semester.startDate || !semester.endDate"
+                >
+                Generate Schedule
+            </button> -->
+        </div>
+        <!-- Global Scheduler Config -->
+        <div v-if="showConfig" class="card p-3 mb-4"> 
+            <h5>Scheduler Settings</h5>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Daily Study Start</label>
+                    <input type="time" class="form-control" v-model="schedulerConfig.dailyStart"> 
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Daily Study End</label>
+                    <input type="time" class="form-control" v-model="schedulerConfig.dailyEnd"> 
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Min Study Duration (mins)</label>
+                    <input type="number" class="form-control" v-model.number="schedulerConfig.minStudyDuration"> 
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Max Study Duration (mins)</label>
+                    <input type="number" class="form-control" v-model.number="schedulerConfig.maxStudyDuration"> 
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Weeks to generate</label>
+                    <input type="number" min="1" max="16" class="form-control" v-model.number="schedulerConfig.weeksToGenerate" placeholder="e.g., 4">
+                </div>
+            </div>
+            <button class="btn btn-primary" @click="saveSchedulerConfig">Save Config</button> 
+        </div>
+
+
+
+        <!-- <button class="btn btn-primary mb-3" @click="showEventForm">Add Event</button> -->
         <div class="event-form" v-if="showForm">
             <form @submit.prevent="addEvent">
                 <div class="mb-3">
@@ -32,6 +78,7 @@
                 <div class="mb-3">
                     <label for="eventType" class="form-label">Type</label>
                     <select class="form-control" id="eventType" v-model="event.type" required>
+                        <option disabled value=" ">--Select Type --</option>
                         <option value="lesson">Lesson</option>
                         <option value="non-lesson">Non-Lesson</option>
                     </select>
@@ -52,6 +99,26 @@
                         </select>
                         </div>
                 </div>
+
+                <div v-if="event.type === 'lesson'">
+                    <div class="mb-3">
+                        <label class="form-label">Course Code</label>
+                        <input type="text" class="form-control" v-model="event.courseCode" required> 
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Course Name</label>
+                        <input type="text" class="form-control" v-model="event.courseName" required> 
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Module Weight (1–5)</label>
+                        <input type="number" class="form-control" v-model.number="event.weightage" min="1" max="5" required> 
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="repeatWeekly" v-model="event.repeatWeekly"> 
+                        <label class="form-check-label" for="repeatWeekly">Repeat Weekly</label> 
+                    </div>
+                </div>
+
                 <button type="submit" class="btn btn-primary">Save Event</button>
                 <button type="button" class="btn btn-secondary ms-2" @click="showForm = false">Cancel</button>
             </form>

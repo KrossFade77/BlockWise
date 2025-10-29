@@ -2,16 +2,28 @@ const app = Vue.createApp({
     data() {
         return {
             showForm: false,
+            showConfig: false,
             event: {
+                id: null,
                 title: '',
                 date: '',
                 time: '',
                 endTime: '',
                 type: 'lesson',
-                repeat: false,
-                repeatDay: '1'  // Monday by default
+                repeatDay: '1',  // Monday by default
+                courseCode: '', // ADDED
+                courseName: '', // ADDED
+                weightage: 1, // ADDED
+                repeat: false // ADDED
             },
             events: [],
+            schedulerConfig: { // ADDED
+                dailyStart: '10:00',
+                dailyEnd: '22:00',
+                minStudyDuration: 30,
+                // maxStudyDuration: 120,
+                weeksToGenerate: 4
+            },
             calendar: null,
             selectedEvent: {},
             selectedEventElement: null,
@@ -56,9 +68,61 @@ const app = Vue.createApp({
                 console.error('Error saving events to localStorage:', error);
             }
         },
+        loadSchedulerConfig() {
+            try {
+                const stored = localStorage.getItem('schedulerConfig');
+                if (stored) {
+                    this.schedulerConfig = JSON.parse(stored);
+                    console.log('Loaded schedulerConfig from localStorage:', this.schedulerConfig);
+                } else {
+                    console.log('No schedulerConfig found in localStorage, initializing with defaults')
+                    this.schedulerConfig = {
+                        dailyStart: '10:00',
+                        dailyEnd: '22:00',
+                        minStudyDuration: 30,
+                        weeksToGenerate: 4
+                    }
+                }
+            } catch (error) {
+                console.log('Error loading schedulerConfig from localStorage:', error);
+                this.schedulerConfig = {
+                    dailyStart: '',
+                    dailyEnd: '',
+                    minStudyDuration: null
+                };
+            }
+        },
+        saveSchedulerConfig() {
+            try {
+                if (
+                    ! this.schedulerConfig.dailyStart ||
+                    ! this.schedulerConfig.dailyEnd ||
+                    ! this.schedulerConfig.minStudyDuration
+                ) {
+                    alert('Please fill in all scheduler configuration fields before saving.');
+                    return;
+                }
+
+                localStorage.setItem('schedulerConfig', JSON.stringify(this.schedulerConfig));
+                console.log('Saved schedulerCOnfig to localStorage:', this.schedulerConfig);
+                console.log('localStorage schedulerConfig after save:', JSON.parse(localStorage.getItem('schedulerConfig')));
+
+                alert('Scheduler configuration saved scucessfully!');
+                this.showConfig = false;
+            } catch (error) {
+                console.error('Error saving schedulerConfig to localStorage:', error);
+                alert('Failed to save scheduler configuration.');
+            }
+        },
         showEventForm() {
             this.showForm = !this.showForm;
             console.log('Add Event clicked, showForm:', this.showForm);
+        },
+        calculateDuration() {
+            const [h1, m1] = start.split(':').map(Number);
+            const [h2, m2] = end.split(':').map(Number);
+            const minutes = (h2 * 60 + m2) - (h1 * 60 + m1);
+            return Math.max(0, minutes);
         },
         addEvent() {
             if (!this.isEventWithinSemester(this.event.date)) {
@@ -132,6 +196,59 @@ const app = Vue.createApp({
                 });
                 console.log('Calendar updated with events:', this.events);
             }
+        },
+        exportSchedulerData() {
+            if (!this.semester.startDate || !this.semester.endDate) {
+                alert("Please set your semester dates first.");
+                return null;
+            }
+            if (!this.schedulerConfig.dailyStart || !this.schedulerConfig.dailyEnd) {
+                alert("Please complete the scheduler settings before generating a schedule.");
+                return null;
+            }
+            if (this.events.filter(e => e.type === 'lesson').length === 0) {
+                alert("Please add at least one event before generating your schedule.");
+                return null;
+            }
+
+            const payload = {
+                semester: this.semester,
+                schedulerConfig: this.schedulerConfig,
+                modules: this.events.filter(e => e.type === 'lesson'),
+                personalEvents: this.events.filter(e => e.type === 'non-lesson')
+            };
+
+            console.log("Schedule request payload:", payload);
+            return payload;
+        },
+        async generateSchedule() {
+            const payload = this.exportSchedulerData();
+            if (!payload) return;
+
+            try {
+                console.log('Sending payload to backend...');
+                const res = await axios.post('/api/generate-schedule', payload);
+                console.log('Received generated schedule:', res.data);
+
+                this.renderGeneratedSchedule(res.data);
+
+                alert('Schedule successfully generated!');
+            } catch (error) {
+                console.error('Error generating schedule:', error);
+                alert('Failed to generate schedule. Please try again.');
+            }
+        },
+        renderGeneratedSchedule(schedule) {
+            schedule.forEach(task => {
+                this.calendar.addEvent({
+                    title: `${task.moduleName} Review`,
+                    start: task.start,
+                    end: task.end,
+                    className: 'review-session'
+                });
+            });
+
+            console.log('Rendered generated schedule to calendar:', schedule);
         },
         handleEventDrop(info) {
             const event = info.event;
@@ -273,6 +390,7 @@ const app = Vue.createApp({
         console.log('FullCalendar available:', typeof window.FullCalendar);
         this.loadEvents();
         this.loadSemester();
+        this.loadSchedulerConfig();
         console.log('Events after load:', this.events);
         const calendarEl = document.getElementById('calendar');
         console.log('Calendar element:', calendarEl);
