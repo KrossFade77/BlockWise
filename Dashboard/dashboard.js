@@ -4,6 +4,7 @@ const app = Vue.createApp({
             showForm: false,
             showConfig: false,
             modalInstance: null,
+            deleteMode: null, // 'this', 'future', 'all'
             event: {
                 id: null,
                 title: '',
@@ -197,7 +198,15 @@ const app = Vue.createApp({
                             start: `${event.date}T${event.time}`,
                             end: event.endTime ? `${event.date}T${event.endTime}` : null,
                             allDay: false,
-                            className: event.type
+                            className: event.type,
+                            extendedProps: {
+                                originalDate: event.originalDate || event.date,
+                                isRecurring: event.isRecurring || false,
+                                courseCode: event.courseCode || '',
+                                courseName: event.courseName || '',
+                                weightage: event.weightage || 1,
+                                originalStart: `${event.date}T${event.time}`
+                            }
                         });
                     } catch (error) {
                         console.error('Error adding event to calendar:', event, error);
@@ -267,29 +276,40 @@ const app = Vue.createApp({
             if (event.end) {
                 endTime = event.end.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
             }
+
             if (!this.isEventWithinSemester(newDate)) {
                 alert('Cannot move event outside semester period.');
                 info.revert();
                 return;
             }
-            let matched = false;
+
+            const oldStart = event.extendedProps.originalStart || `${info.oldEvent.start.toISOString().split('T')[0]}T${info.oldEvent.start.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })}`;
+
             this.events = this.events.map(ev => {
-                const oldStart = new Date(`${ev.date}T${ev.time}+08:00`).toISOString().split('.')[0];
-                const oldEventStart = info.oldEvent.start.toISOString().split('.')[0];
-                console.log('Comparing:', { title: `${ev.title} (${ev.type})`, oldStart, oldEventStart });
-                if (`${ev.title} (${ev.type})` === event.title && oldStart === oldEventStart) {
-                    matched = true;
-                    return { ...ev, date: newDate, time: startTime, endTime: endTime || ev.endTime };
+                const evStart = `${ev.date}T${ev.time}`;
+                if (evStart === oldStart) {
+                    return { 
+                        ...ev, 
+                        date: newDate, 
+                        time: startTime, 
+                        endTime: endTime || ev.endTime,
+                        // Update originalStart for future delete
+                        originalStart: `${newDate}T${startTime}`
+                    };
                 }
                 return ev;
             });
-            if (!matched) {
-                console.error('No matching event found for drop:', { title: event.title, oldStart: info.oldEvent.start });
-            }
-            console.log('Event dropped:', { title: event.title, date: newDate, startTime, endTime });
-            console.log('Updated events:', this.events);
+
             this.saveEvents();
             this.updateCalendar();
+
+            // Update selectedEvent if open
+            if (this.selectedEventElement === event) {
+                this.selectedEvent.originalStart = `${newDate}T${startTime}`;
+                this.selectedEvent.date = newDate;
+                this.selectedEvent.startTime = startTime;
+                this.selectedEvent.endTime = endTime;
+            }
         },
         handleEventClick(info) {
             if (!window.bootstrap) {
@@ -320,7 +340,12 @@ const app = Vue.createApp({
                 endTime,
                 type: event.classNames[0],
                 originalTitle: event.title,
-                originalStart: `${newDate}T${startTime}`
+                originalStart: `${newDate}T${startTime}`,  // This is critical
+                originalDate: event.extendedProps.originalDate || newDate,
+                isRecurring: event.extendedProps.isRecurring,
+                courseCode: event.extendedProps.courseCode || '',
+                courseName: event.extendedProps.courseName || '',
+                weightage: event.extendedProps.weightage || 1
             };
             this.selectedEventElement = event;
             this.editMode = false;
@@ -348,16 +373,87 @@ const app = Vue.createApp({
         deleteEvent() {
             if (!this.selectedEventElement) return;
 
-            this.selectedEventElement.remove();
-            this.events = this.events.filter(ev => 
-                `${ev.title} (${ev.type})` !== this.selectedEvent.originalTitle ||
-                `${ev.date}T${ev.time}` !== this.selectedEvent.originalStart
-            );
+            const event = this.selectedEventElement;
+            const currentStart = `${event.start.toISOString().split('T')[0]}T${event.start.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })}`;
+
+            // Find in this.events using current or original start
+            const originalEvent = this.events.find(ev => {
+                const evStart = `${ev.date}T${ev.time}`;
+                return evStart === currentStart || evStart === this.selectedEvent.originalStart;
+            });
+
+            if (!originalEvent) {
+                console.error('Event not found in this.events');
+                return;
+            }
+
+            if (originalEvent.isRecurring) {
+                const modal = new bootstrap.Modal('#deleteRecurringModal', {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+                modal.show();
+            } else {
+                this.deleteMode = 'this';
+                this.performDelete(originalEvent);
+            }
+        },
+
+        performDelete(eventToDelete) {
+            if (!eventToDelete) return;
+
+            const targetDate = new Date(eventToDelete.date);
+            const originalDate = eventToDelete.originalDate ? new Date(eventToDelete.originalDate) : targetDate;
+
+            this.events = this.events.filter(ev => {
+                if (!ev.isRecurring || ev.originalDate !== eventToDelete.originalDate) {
+                    // Non-recurring or different series
+                    const evStart = `${ev.date}T${ev.time}`;
+                    const targetStart = `${eventToDelete.date}T${eventToDelete.time}`;
+                    if (this.deleteMode === 'this') {
+                        return evStart !== targetStart;
+                    }
+                    return true;
+                }
+
+                const evDate = new Date(ev.date);
+
+                if (this.deleteMode === "this") {
+                    const evStart = `${ev.date}T${ev.time}`;
+                    const targetStart = `${eventToDelete.date}T${eventToDelete.time}`;
+                    return evStart !== targetStart;
+                }
+                if (this.deleteMode === "future") {
+                    return evDate < targetDate;
+                }
+                if (this.deleteMode === "all") {
+                    return false;
+                }
+                return true;
+            });
+
             this.saveEvents();
+            this.updateCalendar();
+            this.selectedEventElement.remove();
 
             if (this.modalInstance) {
                 this.modalInstance.hide();
             }
+
+            this.deleteMode = null;
+        },
+
+        confirmDelete(mode) {
+            this.deleteMode = mode;
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteRecurringModal'));
+            if (modal) modal.hide();
+
+            const originalEvent = this.events.find(ev => 
+                ev.date === this.selectedEvent.date && 
+                ev.time === this.selectedEvent.startTime
+            );
+
+            this.performDelete(originalEvent);
         },
 
         saveEditedEvent() {
@@ -368,11 +464,12 @@ const app = Vue.createApp({
                 return;
             }
 
-            this.selectedEventElement.remove();
+            // Remove old version
             this.events = this.events.filter(ev => 
-                `${ev.title} (${ev.type})` !== this.selectedEvent.originalTitle ||
                 `${ev.date}T${ev.time}` !== this.selectedEvent.originalStart
             );
+
+            // Add new version
             this.events.push({
                 title: this.selectedEvent.title,
                 date: this.selectedEvent.date,
@@ -381,8 +478,11 @@ const app = Vue.createApp({
                 type: this.selectedEvent.type,
                 courseCode: this.selectedEvent.courseCode || '',
                 courseName: this.selectedEvent.courseName || '',
-                weightage: this.selectedEvent.weightage || 1
+                weightage: this.selectedEvent.weightage || 1,
+                isRecurring: this.selectedEvent.isRecurring || false,
+                originalDate: this.selectedEvent.originalDate || this.selectedEvent.date
             });
+
             this.saveEvents();
             this.updateCalendar();
 
