@@ -1,6 +1,6 @@
 {
   "firestore": {
-    "database": "notes",
+    "database": "blockwise",
     "location": "asia-southeast1",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"

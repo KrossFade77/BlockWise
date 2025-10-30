@@ -1,100 +1,175 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to BlockWise</title>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>BlockWise Login (Modular SDK)</title>
 
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/12.4.0/firebase-app-compat.js"></script>
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/12.4.0/firebase-auth-compat.js"></script>
-    <script defer src="/__/firebase/12.4.0/firebase-database-compat.js"></script>
-    <script defer src="/__/firebase/12.4.0/firebase-firestore-compat.js"></script>
-    <script defer src="/__/firebase/12.4.0/firebase-functions-compat.js"></script>
-    <script defer src="/__/firebase/12.4.0/firebase-messaging-compat.js"></script>
-    <script defer src="/__/firebase/12.4.0/firebase-storage-compat.js"></script>
-    <script defer src="/__/firebase/12.4.0/firebase-analytics-compat.js"></script>
-    <script defer src="/__/firebase/12.4.0/firebase-remote-config-compat.js"></script>
-    <script defer src="/__/firebase/12.4.0/firebase-performance-compat.js"></script>
-    <!-- 
-      initialize the SDK after all desired features are loaded, set useEmulator to false
-      to avoid connecting the SDK to running emulators.
-    -->
-    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
+  <!-- Import Firebase SDKs (modular v9+) -->
+  <script type="module">
+    // --- Firebase imports ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+    import { 
+      getAuth, 
+      onAuthStateChanged, 
+      createUserWithEmailAndPassword, 
+      signInWithEmailAndPassword 
+    } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+    import { 
+      getFirestore, 
+      doc, 
+      getDoc, 
+      setDoc 
+    } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-    <style media="screen">
-      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
-      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
-      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
-      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
-      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
-      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
-      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
-      @media (max-width: 600px) {
-        body, #message { margin-top: 0; background: white; box-shadow: none; }
-        body { border-top: 16px solid #ffa100; }
+    // --- Firebase config ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyBEuPV6piBqzJbl-gXZOt_YIS0F2cGIk00",
+      authDomain: "testbase-ca192.firebaseapp.com",
+      projectId: "testbase-ca192",
+      storageBucket: "testbase-ca192.firebasestorage.app",
+      messagingSenderId: "344945139722",
+      appId: "1:344945139722:web:75aa2e9a5a364de11c3ff3"
+    };
+
+    // --- Initialize Firebase ---
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // ✅ Explicitly connect to correct Firestore database
+    // Change "blockwise" to "(default)" if you’ve created a default DB.
+    const db = getFirestore(app, "blockwise"); 
+
+    console.log("✅ Firebase initialized:", app.options.projectId);
+
+    // --- DOM Elements ---
+    const loginBtn = document.getElementById("loginBtn");
+    const signupBtn = document.getElementById("signupBtn");
+    const loginError = document.getElementById("loginError");
+
+    // --- Helper: ensure user doc exists ---
+    async function ensureUserDoc(user) {
+      const ref = doc(db, user.uid, "account particulars");
+      const snap = await getDoc(ref);
+      if (!snap.exists()) {
+        await setDoc(ref, {
+          profile: {
+            email: user.email,
+            createdAt: Date.now()
+          }
+        });
+        console.log("[ensureUserDoc] Created user document in Firestore");
+      } else {
+        console.log("[ensureUserDoc] User doc already exists");
       }
-    </style>
-  </head>
-  <body>
-    <!-- temp link dump -->
-    <div id="message">
-      <h1>links to webpage</h1>
-      <a href="./semester.html">semester</a>
-    </div>
+    }
 
-    <div id="message">
-      <h2>Welcome</h2>
-      <h1>Firebase Hosting Setup Complete</h1>
-      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
-      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
-    </div>
-    <p id="load">Firebase SDK Loading&hellip;</p>
-
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const loadEl = document.querySelector('#load');
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-        // // The Firebase SDK is initialized and available here!
-        //
-        // firebase.auth().onAuthStateChanged(user => { });
-        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-        // firebase.firestore().doc('/foo/bar').get().then(() => { });
-        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-        // firebase.analytics(); // call to activate
-        // firebase.analytics().logEvent('tutorial_completed');
-        // firebase.performance(); // call to activate
-        //
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-        try {
-          let app = firebase.app();
-          let features = [
-            'auth', 
-            'database', 
-            'firestore',
-            'functions',
-            'messaging', 
-            'storage', 
-            'analytics', 
-            'remoteConfig',
-            'performance',
-          ].filter(feature => typeof app[feature] === 'function');
-          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
-        } catch (e) {
-          console.error(e);
-          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
-        }
-        // Redirect regardless of Firebase initialization
-        if (!localStorage.getItem('semester')) {
-            window.location.href = 'semester.html';
+    // --- Helper: redirect user ---
+    async function goNext(uid) {
+      try {
+        const ref = doc(db, "users", uid);
+        const snap = await getDoc(ref);
+        const hasSemester = snap.exists() && snap.data().semester;
+        if (!hasSemester) {
+          console.log("[goNext] → semester.html");
+          window.location.href = "semester.html";
         } else {
-            window.location.href = 'dashboard.html';
+          console.log("[goNext] → dashboard.html");
+          window.location.href = "dashboard.html";
         }
-      });
-    </script>
-  </body>
+      } catch (err) {
+        console.error("[goNext] Firestore error:", err);
+        loginError.textContent = "Error checking semester info: " + err.message;
+      }
+    }
+
+    // --- Login flow ---
+    loginBtn.addEventListener("click", async () => {
+      loginError.textContent = "";
+      const email = document.getElementById("email").value.trim();
+      const pass = document.getElementById("password").value;
+      if (!email || !pass) {
+        loginError.textContent = "Please enter email and password.";
+        return;
+      }
+      try {
+        console.log("[Login] Attempting sign-in for", email);
+        const cred = await signInWithEmailAndPassword(auth, email, pass);
+        await ensureUserDoc(cred.user);
+        goNext(cred.user.uid);
+      } catch (err) {
+        console.error("[Login] Error:", err);
+        loginError.textContent = err.message;
+      }
+    });
+
+    // --- Signup flow ---
+    signupBtn.addEventListener("click", async () => {
+      loginError.textContent = "";
+      const email = document.getElementById("email").value.trim();
+      const pass = document.getElementById("password").value;
+      if (!email || !pass) {
+        loginError.textContent = "Please enter email and password.";
+        return;
+      }
+      try {
+        console.log("[Signup] Creating account for", email);
+        const cred = await createUserWithEmailAndPassword(auth, email, pass);
+        await ensureUserDoc(cred.user);
+        goNext(cred.user.uid);
+      } catch (err) {
+        console.error("[Signup] Error:", err);
+        loginError.textContent = err.message;
+      }
+    });
+
+    // --- Auto login ---
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        console.log("[AutoLogin] Existing session for", user.email);
+        await ensureUserDoc(user);
+        goNext(user.uid);
+      } else {
+        console.log("[AutoLogin] No user signed in.");
+      }
+    });
+  </script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+      text-align: center;
+    }
+    #loginBox {
+      margin: 2rem auto;
+      padding: 1.5rem;
+      max-width: 400px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    input, button {
+      margin: 0.5rem 0;
+      padding: 0.5rem;
+      width: 90%;
+      font-size: 1rem;
+    }
+    button {
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Welcome to BlockWise</h1>
+  <div id="loginBox">
+    <h2>Log In / Sign Up</h2>
+    <input id="email" type="email" placeholder="Email" required />
+    <input id="password" type="password" placeholder="Password" required />
+    <button id="loginBtn">Log In</button>
+    <button id="signupBtn">Sign Up</button>
+    <p id="loginError" style="color:red;"></p>
+  </div>
+</body>
 </html>
