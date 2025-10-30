@@ -24,7 +24,8 @@ const app = Vue.createApp({
                 dailyEnd: '22:00',
                 minStudyDuration: 30,
                 // maxStudyDuration: 120,
-                weeksToGenerate: 4
+                weeksToGenerate: 4,
+                intervals: [1, 3, 7]
             },
             calendar: null,
             selectedEvent: {},
@@ -82,7 +83,8 @@ const app = Vue.createApp({
                         dailyStart: '10:00',
                         dailyEnd: '22:00',
                         minStudyDuration: 30,
-                        weeksToGenerate: 4
+                        weeksToGenerate: 4,
+                        intervals: [1, 3, 7]
                     }
                 }
             } catch (error) {
@@ -231,7 +233,10 @@ const app = Vue.createApp({
 
             const payload = {
                 semester: this.semester,
-                schedulerConfig: this.schedulerConfig,
+                schedulerConfig: {
+                    ...this.schedulerConfig,
+                    intervals: this.schedulerConfig.intervals?.length ? this.schedulerConfig.intervals : [1, 3, 7]
+                },
                 modules: this.events.filter(e => e.type === 'lesson'),
                 personalEvents: this.events.filter(e => e.type === 'non-lesson')
             };
@@ -257,16 +262,50 @@ const app = Vue.createApp({
             }
         },
         renderGeneratedSchedule(schedule) {
-            schedule.forEach(task => {
+            if (!schedule || !Array.isArray(schedule.sessions)) {
+                console.error('Unexpected schedule shape:', schedule);
+                alert('Scheduler returned an unexpected result. Check console.');
+                return;
+            }
+
+            // 1) Clear previous review events so we don't duplicate on re-run
+            this.calendar.getEvents().forEach(ev => {
+                if (ev.extendedProps && ev.extendedProps.kind === 'review') ev.remove();
+            });
+
+            // 2) Add scheduled / deferred sessions
+            schedule.sessions.forEach(s => {
+                const title = `${s.moduleName} [${s.interval}d]${s.status === 'deferred' ? ' • Deferred' : ''}`;
                 this.calendar.addEvent({
-                    title: `${task.moduleName} Review`,
-                    start: task.start,
-                    end: task.end,
-                    className: 'review-session'
+                title,
+                start: s.start,
+                end: s.end,
+                allDay: false,
+                className: ['review-session', s.status || 'scheduled'],
+                extendedProps: { kind: 'review', status: s.status || 'scheduled' }
                 });
             });
 
-            console.log('Rendered generated schedule to calendar:', schedule);
+            // 3) Optional: show dropped sessions on the calendar (Variant B)
+            const mode = (this.schedulerConfig && this.schedulerConfig.displayDropped) || 'calendar';
+            if (mode === 'calendar' && schedule.dropped && Array.isArray(schedule.dropped.calendarVisual)) {
+                schedule.dropped.calendarVisual.forEach(d => {
+                    const dayStart = (this.schedulerConfig && this.schedulerConfig.dailyStart) || '10:00';
+                    const target = d.originalTarget || d.target; // backend may send either
+                    if (!target) return;
+
+                    this.calendar.addEvent({
+                        title: `${d.moduleName} [${d.interval}d] (Missed)`,
+                        start: `${target}T${dayStart}`,
+                        end: `${target}T${dayStart}`,
+                        allDay: false,
+                        className: ['review-session', 'dropped'],
+                        extendedProps: { kind: 'review', status: 'dropped' }
+                    });
+                });
+            }
+
+            console.log('Rendered schedule:', schedule);
         },
         handleEventDrop(info) {
             const event = info.event;
