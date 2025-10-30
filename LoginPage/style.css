@@ -1,0 +1,239 @@
+/* Import Poppins font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400&display=swap');
+
+/* Basic Properties */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+    background-size: 400% 400%;
+    animation: change 10s ease-in-out infinite;
+}
+
+@keyframes change {
+    0% { background-position: 0 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0 50%; }
+}
+
+/* Container */
+.container {
+    position: relative;
+    width: 800px;
+    height: 500px;
+    margin: 20px;
+}
+
+/* Blue Background for Buttons */
+.bluebg {
+    position: absolute;
+    top: 40px;
+    width: 100%;
+    height: 420px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 5px 45px rgba(0, 0, 0, 0.15);
+    border-radius: 5px;
+}
+
+.bluebg .box {
+    width: 50%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.bluebg .box h2 {
+    color: white;
+    font-size: 1.2em;
+    font-weight: 400;
+    margin-bottom: 10px;
+}
+
+/* Slider */
+.formBx {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 52%;
+    height: 100%;
+    background: white;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 5px 45px rgba(0, 0, 0, 0.15);
+    transition: transform 0.5s ease-in-out;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.formBx.active {
+    transform: translateX(100%); /* Slide right to show signup */
+}
+
+.formBx .form {
+    position: absolute;
+    width: 100%;
+    padding: 30px;
+    transition: transform 0.5s ease-in-out;
+    box-sizing: border-box;
+}
+
+.formBx .form h3 {
+    font-size: 1.5rem;
+    color: #333;
+    margin-bottom: 20px;
+    font-weight: 400;
+}
+
+.formBx .form i {
+    font-size: 4rem;
+    color: #23a6d5;
+    margin-bottom: 10px;
+}
+
+.formBx .signupForm i {
+    color: #e73c7e;
+}
+
+.formBx .signinForm {
+    transform: translateX(0);
+}
+
+.formBx.active .signinForm {
+    transform: translateX(-100%); /* Slide left out of view */
+}
+
+.formBx .signupForm {
+    transform: translateX(100%); /* Start right */
+}
+
+.formBx.active .signupForm {
+    transform: translateX(0); /* Slide into view */
+}
+
+.formBx .form .forgot {
+    color: #333;
+    font-size: 14px;
+    text-decoration: none;
+    display: block; /* Ensure below button */
+}
+
+.formBx .form .forgot:hover {
+    color: #348dad;
+}
+
+/* Responsive Design for Mobile */
+/* MOBILE: < 767px (Bootstrap 'md' breakpoint) */
+/* MOBILE: < 767px */
+@media (max-width: 767px) {
+  .container {
+    width: 90%;
+    max-width: 400px;
+    height: auto;
+    margin: 20px auto;
+  }
+
+  .bluebg {
+    position: relative;
+    top: 0;
+    height: 200px;
+    width: 100%;
+    flex-direction: column;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 8px;
+    overflow: hidden;
+    z-index: 20;
+  }
+
+  .bluebg .box {
+    width: 100%;
+    height: 100px;
+    background: #23a6d5;
+    border-radius: 8px;
+    margin-bottom: 0;
+  }
+
+  .bluebg .box.signup {
+    background: #e73c7e;
+  }
+
+  .bluebg .box h2 {
+    font-size: 1.1em;
+    margin-bottom: 8px;
+  }
+
+  .bluebg .box button {
+    font-size: 1em;
+    padding: 8px 16px;
+  }
+
+  .formBx {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 450px;
+    background: white;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    transition: none;
+    z-index: 10;
+    margin-top: 10px;
+    transform: translateY(0) !important;
+  }
+
+  .formBx.active {
+    transform: translateY(0) !important;
+  }
+
+  .formBx .form {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 450px;
+    padding: 30px 20px;
+    transition: transform 0.5s ease-in-out;
+  }
+
+  .formBx .signinForm {
+    transform: translateY(0);
+  }
+
+  .formBx.active .signinForm {
+    transform: translateY(-450px);
+  }
+
+  .formBx .signupForm {
+    transform: translateY(450px);
+  }
+
+  .formBx.active .signupForm {
+    transform: translateY(0);
+  }
+
+  .formBx .form i {
+    font-size: 3.5rem;
+    margin-bottom: 15px;
+  }
+
+  .formBx .form .btn {
+    margin-top: 10px;
+  }
+}

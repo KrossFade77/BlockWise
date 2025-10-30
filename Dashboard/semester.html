@@ -54,7 +54,7 @@
                     try {
                         localStorage.setItem('semester', JSON.stringify(this.semester));
                         console.log('Semester saved to localStorage:', this.semester);
-                        window.location.href = 'dashboard.html';
+                        window.location.href = './Dashboard/dashboard.html';
                     } catch (error) {
                         console.error('Error saving semester to localStorage:', error);
                         this.error = 'Failed to save semester dates.';
