@@ -1,6 +1,6 @@
 const express = require('express');
 const path = require('path');
-// const { generateSpacedRepetitionSchedule } = require('./scheduler');
+const { generateSpacedRepetitionSchedule } = require('./scheduler');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,6 +24,10 @@ app.post('/api/generate-schedule', (req, res) => {
         res.status(500).json({ error: 'Internal scheduler error' });
     }
 });
+
+app.post('/api/generate-schedule', (req, res) => {
+        console.log("📦 Received payload:", JSON.stringify(req.body, null, 2));
+    });
 
 // fallback is to redirect all unknown routes back to `dashboard.html`
 app.use((req, res) => {
