@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS for slider and animations -->
+    <link rel="stylesheet" href="../LoginPage/style.css">
+    <!-- Boxicons for icons -->
+    <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
+    <!-- Vue.js -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <title>Blockwise - Login</title>
+    <!-- Import Firebase SDKs (modular v9+) -->
+     
+    <script type="module">
+      // --- Firebase imports ---
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+      import { 
+        getAuth, 
+        onAuthStateChanged, 
+        createUserWithEmailAndPassword, 
+        signInWithEmailAndPassword 
+      } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+      import { 
+        getFirestore, 
+        doc, 
+        getDoc, 
+        setDoc 
+      } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+  
+      // --- Firebase config ---
+      const firebaseConfig = {
+        apiKey: "AIzaSyBEuPV6piBqzJbl-gXZOt_YIS0F2cGIk00",
+        authDomain: "testbase-ca192.firebaseapp.com",
+        projectId: "testbase-ca192",
+        storageBucket: "testbase-ca192.firebasestorage.app",
+        messagingSenderId: "344945139722",
+        appId: "1:344945139722:web:75aa2e9a5a364de11c3ff3"
+      };
+  
+      // --- Initialize Firebase ---
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+  
+      // ✅ Explicitly connect to correct Firestore database
+      // Change "blockwise" to "(default)" if you’ve created a default DB.
+      const db = getFirestore(app, "blockwise"); 
+  
+      console.log("✅ Firebase initialized:", app.options.projectId);
+  
+      // --- DOM Elements ---
+      const loginBtn = document.getElementById("loginBtn");
+      const signupBtn = document.getElementById("signupBtn");
+      const loginError = document.getElementById("loginError");
+      // Sign-in inputs (added ids to the markup below)
+      const siEmail = document.getElementById("si_email");
+      const siPassword = document.getElementById("si_password");
+
+      // Sign-up inputs (added ids to the markup below)
+      const suUsername = document.getElementById("su_username");
+      const suEmail    = document.getElementById("su_email");
+      const suPass     = document.getElementById("su_password");
+      const suConfirm  = document.getElementById("su_confirm");
+      
+  
+      // --- Helper: ensure user doc exists ---
+      async function ensureUserDoc(user) {
+        const ref = doc(db, user.uid, "account particulars");
+        const snap = await getDoc(ref);
+        if (!snap.exists()) {
+          await setDoc(ref, {
+            profile: {
+              email: user.email,
+              username: suUsername?.value?.trim() || null,
+              createdAt: Date.now(),
+              
+            }
+          });
+          console.log("[ensureUserDoc] Created user document in Firestore");
+        } else {
+          console.log("[ensureUserDoc] User doc already exists");
+        }
+      }
+  
+      // --- Helper: redirect user ---
+      async function goNext(uid) {
+        try {
+          const ref = doc(db, uid, "account particulars");
+          const snap = await getDoc(ref);
+          const hasSemester = snap.exists() && snap.data().semester;
+          if (!hasSemester) {
+            console.log("[goNext] → semester.html");
+            window.location.href = "semester.html";
+          } else {
+            console.log("[goNext] → dashboard.html");
+            window.location.href = "dashboard.html";
+          }
+        } catch (err) {
+          console.error("[goNext] Firestore error:", err);
+          loginError.textContent = "Error checking semester info: " + err.message;
+        }
+      }
+  
+      // --- Login flow ---
+      loginBtn.addEventListener("click", async () => {
+        loginError.textContent = "";
+        const email = siEmail.value.trim();
+        const pass = siPassword.value;
+        if (!email || !pass) {
+          loginError.textContent = "Please enter email and password.";
+          return;
+        }
+        try {
+          console.log("[Login] Attempting sign-in for", email);
+          const cred = await signInWithEmailAndPassword(auth, email, pass);
+          await ensureUserDoc(cred.user);
+          goNext(cred.user.uid);
+        } catch (err) {
+          console.error("[Login] Error:", err);
+          loginError.textContent = err.message;
+        }
+      });
+  
+      // --- Signup flow ---
+      signupBtn.addEventListener("click", async () => {
+        loginError.textContent = "";
+        const username = suUsername.value.trim();
+        const email = suEmail.value.trim();
+        const pass = suPass.value;
+        const confirm = suConfirm.value;
+        if (!username || !email || !pass || !confirm) {
+          loginError.textContent = "Please enter email and password.";
+          return;
+        }
+        if (pass !== confirm) {
+          loginError.textContent = "Passwords do not match.";
+          return;
+        }
+        try {
+          console.log("[Signup] Creating account for", email);
+          const cred = await createUserWithEmailAndPassword(auth, email, pass);
+          await ensureUserDoc(cred.user);
+          goNext(cred.user.uid);
+        } catch (err) {
+          console.error("[Signup] Error:", err);
+          loginError.textContent = err.message;
+        }
+      });
+  
+      // --- Auto login ---
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          console.log("[AutoLogin] Existing session for", user.email);
+          await ensureUserDoc(user);
+          goNext(user.uid);
+        } else {
+          console.log("[AutoLogin] No user signed in.");
+        }
+      });
+    </script>
+</head>
+<body>
+    <div class="container" id="app">
+        <div class="bluebg">
+            <div class="box signin">
+                <h2>Already Have an Account?</h2>
+                <button class="btn btn-light signinbtn" @click="toggleForm(false)">Sign In</button>
+            </div>
+            <div class="box signup">
+                <h2>Don't Have an Account?</h2>
+                <button class="btn btn-light signupbtn" @click="toggleForm(true)">Sign Up</button>
+            </div>
+        </div>
+
+        <div class="formBx" :class="{ active: isSignup }">
+
+            <!-- Sign In Form -->
+            <div class="form signinForm">
+                <form @submit.prevent="handleSignIn">
+                    <i class='bx bx-log-in signinimage'></i>
+                    <h3>Sign In</h3>
+                    <div class="mb-3">
+                        <input type="text" class="form-control" placeholder="Email" v-model="signin.username" id="si_email" required>
+                    </div>
+                    <div class="mb-3">
+                        <input type="password" class="form-control" placeholder="Password" v-model="signin.password" id="si_password" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="loginBtn">Login</button>
+                    <div class="mt-2">
+                        <a href="#" class="forgot">Forgot Password?</a>
+                    </div>
+                </form>
+
+                <!-- Global error area requested -->
+                <div id="loginError" class="text-danger mt-3"></div>
+            </div>
+            <!-- Sign Up Form -->
+            <div class="form signupForm">
+                <form @submit.prevent="handleSignUp">
+                    <i class='bx bxs-user signupimage'></i>
+                    <h3>Sign Up</h3>
+                    <div class="mb-3">
+                        <input type="text" class="form-control" placeholder="Username" v-model="signup.username" id="su_username" required>
+                    </div>
+                    <div class="mb-3">
+                        <input type="email" class="form-control" placeholder="Email Address" v-model="signup.email" id="su_email" required>
+                    </div>
+                    <div class="mb-3">
+                        <input type="password" class="form-control" placeholder="Password" v-model="signup.password" id="su_password" required>
+                    </div>
+                    <div class="mb-3">
+                        <input type="password" class="form-control" placeholder="Confirm Password" v-model="signup.confirmPassword" id="su_confirm" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" id="signupBtn">Register</button>
+                </form>
+                <!-- Global error area requested -->
+                <div id="loginError" class="text-danger mt-3"></div>
+            </div>
+        </div>
+    </div>
+    <script src="../LoginPage/script.js"></script>
+</body>
+</html>

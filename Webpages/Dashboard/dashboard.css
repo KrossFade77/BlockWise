@@ -1,0 +1,45 @@
+/* Project/Dashboard/dashboard.css */
+.event-form {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #f8f9fa; /* Bootstrap light gray */
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Style lesson events (blue) */
+.fc-event.lesson {
+    background-color: #3788d8;
+    border-color: #2b6cb0;
+    color: white;
+}
+
+/* Style non-lesson events (green) */
+.fc-event.non-lesson {
+    background-color: #2e7d32;
+    border-color: #1b5e20;
+    color: white;
+}
+
+/* Ensure event text is readable */
+.fc-event-title {
+    font-size: 14px;
+    padding: 2px 4px;
+}
+
+.fc-event.review-session {
+    background-color: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+}
+
+/* Icons in title */
+.fc-event-title::before {
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    margin-right: 5px;
+}
+.lesson .fc-event-title::before { content: "\f02d"; }     /* book */
+.non-lesson .fc-event-title::before { content: "\f005"; } /* star */
+.review-session .fc-event-title::before { content: "\f0f3"; } /* bell */
