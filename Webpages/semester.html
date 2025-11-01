@@ -30,8 +30,35 @@
         </form>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.2.37/dist/vue.global.prod.js"></script>
-    <script>
-        const app = Vue.createApp({
+    <script type="module">
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+        import { 
+            getAuth, onAuthStateChanged 
+        } 
+        from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+        import {
+            getFirestore, doc, getDoc, setDoc
+        } 
+        from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+        // --- Your Firebase config ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBEuPV6piBqzJbl-gXZOt_YIS0F2cGIk00",
+            authDomain: "testbase-ca192.firebaseapp.com",
+            projectId: "testbase-ca192",
+            storageBucket: "testbase-ca192.firebasestorage.app",
+            messagingSenderId: "344945139722",
+            appId: "1:344945139722:web:75aa2e9a5a364de11c3ff3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app, "blockwise");
+        const { createApp } = Vue;
+
+
+        createApp({
             data() {
                 return {
                     semester: {
@@ -42,7 +69,7 @@
                 };
             },
             methods: {
-                saveSemester() {
+                async saveSemester() {
                     if (!this.semester.startDate || !this.semester.endDate) {
                         this.error = 'Please fill in both dates.';
                         return;
@@ -51,22 +78,50 @@
                         this.error = 'End date must be after start date.';
                         return;
                     }
+                    const ref = doc(db, this.uid, "semester");
+                    this.saving = true;
                     try {
-                        localStorage.setItem('semester', JSON.stringify(this.semester));
-                        console.log('Semester saved to localStorage:', this.semester);
-                        window.location.href = './Dashboard/dashboard.html';
-                    } catch (error) {
-                        console.error('Error saving semester to localStorage:', error);
+                        await setDoc(ref, {
+                        startDate: this.semester.startDate,
+                        endDate: this.semester.endDate,
+                        updatedAt: Date.now()
+                        }, { merge: true });
+
+                        console.log("[Semester] Saved to Firestore:", this.semester);
+                        // Navigate after successful save (optional)
+                        window.location.href = 'dashboard.html';
+                    } catch (e) {
+                        console.error("[Semester] Save error:", e);
                         this.error = 'Failed to save semester dates.';
-                    }
+                    } 
                 }
             },
             mounted() {
-                const stored = localStorage.getItem('semester');
-                if (stored) {
-                    this.semester = JSON.parse(stored);
-                    console.log('Loaded semester from localStorage:', this.semester);
-                }
+                // if not logged in, redirect to index
+                onAuthStateChanged(auth, async(user)=> {
+                    if (!user) {
+                        window.location.href = "index.html";
+                        return;
+                    }
+
+                    this.uid = user.uid;
+                    const ref = doc(db, this.uid, "semester");
+                    try {
+                        const snap = await getDoc(ref);
+                        if (snap.exists()) {
+                            const data = snap.data();
+                            this.semester.startDate = data.startDate || this.semester.startDate;
+                            this.semester.endDate = data.endDate || this.semester.endDate;
+                            console.log("[Semester] Loaded from Firestore:", data);
+                        } else {
+                            console.log("[Semester] No existing doc; using defaults.");
+                        }
+                        } 
+                    catch (e) {
+                        console.error("[Semester] Load error:", e);
+                        this.error = "Failed to load semester data.";
+                        }
+                })
             }
         }).mount('#app');
     </script>

@@ -496,7 +496,7 @@ const app = Vue.createApp({
             localStorage.removeItem('currentUser');
             // Optional: keep semester, or remove if you want full reset
             // localStorage.removeItem('semester');
-            window.location.href = './LoginPage/index.html';
+            window.location.href = './index.html';
         },
     },
     mounted() {
@@ -504,7 +504,7 @@ const app = Vue.createApp({
         // Check login
         const user = localStorage.getItem('currentUser');
         if (!user) {
-            window.location.href = './LoginPage/index.html';
+            window.location.href = './index.html';
             return;
         }
 
