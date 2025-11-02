@@ -25,8 +25,8 @@
                 <input type="date" class="form-control" id="endDate" v-model="semester.endDate" required>
             </div>
             <div class="error" :class="{ show: error }">{{ error }}</div>
-            <button type="submit" class="btn btn-primary">Save Semester</button>
-            <a href="dashboard.html" class="btn btn-secondary">Go to Dashboard</a>
+            <button type="submit" class="btn btn-primary" :disabled="saving">{{ saving ? 'Saving...' : 'Save Semester' }}</button>
+            <a href="dashboard.html" class="btn btn-secondary" v-if="uid && !saving">Go to Dashboard</a>
         </form>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.2.37/dist/vue.global.prod.js"></script>
@@ -66,7 +66,8 @@
                         startDate: '2025-08-01',
                         endDate: '2025-11-30'
                     },
-                    error: ''
+                    error: '',
+                    saving: false
                 };
             },
             methods: {
@@ -94,6 +95,7 @@
                     } catch (e) {
                         console.error("[Semester] Save error:", e);
                         this.error = 'Failed to save semester dates.';
+                        this.saving = false;
                     } 
                 }
             },
