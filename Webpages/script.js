@@ -60,7 +60,7 @@ createApp({
             try {
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 console.log("Signed up:", userCredential.user.email);
-                window.location.href = '../semester.html';
+                window.location.href = './semester.html';
             } catch (error) {
                 console.error("Sign up error:", error);
                 this.error = this.getFriendlyError(error);
@@ -83,7 +83,7 @@ createApp({
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
                 console.log("Signed in:", userCredential.user.email);
                 const semesterDoc = await getDoc(doc(db, userCredential.user.uid, "semester"));
-                window.location.href = semesterDoc.exists() ? '../dashboard.html' : '../semester.html';
+                window.location.href = semesterDoc.exists() ? './dashboard.html' : './semester.html';
             } catch (error) {
                 console.error("Sign in error:", error);
                 this.error = this.getFriendlyError(error);
@@ -127,10 +127,10 @@ createApp({
                 // 3. Redirect to the correct page
                 if (semesterDoc.exists()) {
                     console.log("[DEBUG] Semester doc found. Redirecting to dashboard.");
-                    window.location.href = '../dashboard.html';
+                    window.location.href = './dashboard.html';
                 } else {
                     console.log("[DEBUG] No semester doc. Redirecting to semester setup.");
-                    window.location.href = '../semester.html';
+                    window.location.href = './semester.html';
                 }
 
             } catch (error) {
@@ -144,13 +144,13 @@ createApp({
     },
     mounted() {
         onAuthStateChanged(auth, (user) => {
-            if (user && window.location.pathname.includes('LoginPage')) {
+            if (user && window.location.pathname.includes('index.html')) {
                 // Already logged in → redirect
                 getDoc(doc(db, user.uid, "semester")).then(snap => {
                     if (snap.exists()) {
-                        window.location.href = '../dashboard.html';
+                        window.location.href = './dashboard.html';
                     } else {
-                        window.location.href = '../semester.html';
+                        window.location.href = './semester.html';
                     }
                 });
             }

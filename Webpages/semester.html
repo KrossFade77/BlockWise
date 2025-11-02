@@ -5,29 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Semester Setup</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="./style.css">
     <style>
-        body { padding: 20px; }
-        .form-container { max-width: 500px; margin: auto; }
-        .error { color: red; display: none; }
+        .formBx.semester-form {
+            left: 50%;
+            transform: translateX(-50%);
+            width: 500px; /* Set a fixed width for the form */
+            max-width: 90%;
+         }
+
+        .formBx .form h2 {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .error { color: red; } /* Keep your error style */
         .error.show { display: block; }
     </style>
 </head>
 <body>
-    <div id="app" class="form-container">
-        <h2>Semester Setup</h2>
-        <form @submit.prevent="saveSemester">
-            <div class="mb-3">
-                <label for="startDate" class="form-label">Semester Start Date</label>
-                <input type="date" class="form-control" id="startDate" v-model="semester.startDate" required>
+    <div class="container" id="app">
+        <div class="formBx semester-form">
+            <div class="form">
+                <h2><i class='bx bxs-calendar-edit' style="color: #23a6d5;"></i> Semester Setup</h2>
+                <p class="text-muted mb-4">Set your semester dates to get started.</p>
+                <form @submit.prevent="saveSemester">
+                    <div class="mb-3">
+                        <label for="startDate" class="form-label">Semester Start Date</label>
+                        <input type="date" class="form-control" id="startDate" v-model="semester.startDate" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="endDate" class="form-label">Semester End Date</label>
+                        <input type="date" class="form-control" id="endDate" v-model="semester.endDate" required>
+                    </div>
+                    <div class="error" :class="{ show: error }">{{ error }}</div>
+                    <button type="submit" class="btn btn-primary" :disabled="saving">{{ saving ? 'Saving...' : 'Save Semester' }}</button>
+                    <a href="dashboard.html" class="btn btn-secondary" v-if="uid && !saving">Go to Dashboard</a>
+                </form>
             </div>
-            <div class="mb-3">
-                <label for="endDate" class="form-label">Semester End Date</label>
-                <input type="date" class="form-control" id="endDate" v-model="semester.endDate" required>
-            </div>
-            <div class="error" :class="{ show: error }">{{ error }}</div>
-            <button type="submit" class="btn btn-primary" :disabled="saving">{{ saving ? 'Saving...' : 'Save Semester' }}</button>
-            <a href="dashboard.html" class="btn btn-secondary" v-if="uid && !saving">Go to Dashboard</a>
-        </form>
+        </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.2.37/dist/vue.global.prod.js"></script>
     <script type="module">

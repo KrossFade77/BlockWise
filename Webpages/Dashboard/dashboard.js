@@ -188,10 +188,19 @@ function bootApp(semesterFromFirestore, user) {
       showEventForm() { this.showForm = !this.showForm; },
 
       // helper: build a stable doc id so multiple dates don't overwrite each other
-      docIdFor(e) {
-        const slug = (s) => s.toLowerCase().trim().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
-        return `${slug(e.title)}_${e.date}_${e.startTime.replace(':','-')}`; // e.g., "cs101_2025-09-01_10-00"
-      },
+   	  docIdFor(e) {
+        // Check if e itself exists, if not, return a random key to prevent crashes
+        if (!e) {
+            return `invalid-event-${Math.random()}`;
+        }
+
+   		const slug = (s) => (s || '').toLowerCase().trim().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+ 		
+        // FIX: Check if startTime exists. If not, use '00-00' as a fallback.
+        const timeSlug = (e.startTime || '00-00').replace(':', '-'); 
+ 		
+        return `${slug(e.title)}_${e.date || 'no-date'}_${timeSlug}`;
+   	  },
       
       // helper: expand weekly occurrences from a seed event until semester end
       expandWeekly(e, semester) {
@@ -411,7 +420,7 @@ function bootApp(semesterFromFirestore, user) {
       },
 
       logout() {
-        signOut(auth).then(() => window.location.href = './LoginPage/index.html');
+        signOut(auth).then(() => window.location.href = './index.html');
       },
 
       // Helper to format time as HH:MM (e.g., "09:00")
