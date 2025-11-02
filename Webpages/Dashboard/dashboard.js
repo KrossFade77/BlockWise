@@ -88,8 +88,38 @@ function bootApp(semesterFromFirestore, user) {
         originalEventForEdit: null,
         editMode: false,
         semester: { startDate: '', endDate: '' },
+        showSidebar: true,
       };
     },
+
+    computed: {
+        /**
+         * Scans all events and returns a unique, sorted list of modules.
+         */
+        uniqueModules() {
+            console.log("[DEBUG] Re-computing unique modules...");
+            const modules = {};
+
+            // 1. Find all 'lesson' events and get their course codes
+            this.events.forEach(event => {
+                if (event.type === 'lesson' && event.courseCode) {
+                    // Use an object to automatically handle duplicates
+                    modules[event.courseCode.toUpperCase()] = {
+                        code: event.courseCode.toUpperCase(),
+                        name: event.courseName || '',
+                        weight: event.weightage || 1
+                    };
+                }
+            });
+
+            // 2. Convert object back to an array and sort it
+            const moduleList = Object.values(modules).sort((a, b) => a.code.localeCompare(b.code));
+
+            console.log(`[DEBUG] Found ${moduleList.length} unique modules.`);
+            return moduleList;
+        }
+    },
+
     methods: {
       loadSemester() {
         this.semester = {
@@ -97,6 +127,32 @@ function bootApp(semesterFromFirestore, user) {
           endDate: semesterFromFirestore.endDate
         };
       },
+
+      toggleSidebar() {
+       this.showSidebar = !this.showSidebar;
+       console.log(`[DEBUG] Sidebar toggled. Show: ${this.showSidebar}`);
+
+         // Wait for the DOM to update, then resize the calendar
+        this.$nextTick(() => {
+          if (this.calendar) {
+          console.log("[DEBUG] Forcing calendar resize");
+          this.calendar.updateSize();
+         }
+       });
+     },
+
+      setFilter(moduleCode) {
+       if (this.activeModuleFilter === moduleCode) {
+        // If clicking the same filter, turn it off
+       this.activeModuleFilter = null;
+       console.log("[DEBUG] Module filter cleared.");
+       } else {
+        this.activeModuleFilter = moduleCode;
+        console.log(`[DEBUG] Module filter set to: ${moduleCode}`);
+      }
+      // We need to re-render the calendar
+      this.updateCalendar();
+    },
 
       /** 🔹 Save event to Firestore under /<UID>/semester/{lesson|nonlesson}/{title} */
       async saveEventToFirestore(event) {
@@ -479,6 +535,11 @@ function bootApp(semesterFromFirestore, user) {
             });
             this.calendar.render();
             this.updateCalendar();
+
+            setTimeout(() => {
+              console.log("[DEBUG] Forcing calendar resize");
+              this.calendar.updateSize();
+          }, 100);
             console.log('[DEBUG] Calendar initialized and rendered');
           }
 
@@ -489,30 +550,48 @@ function bootApp(semesterFromFirestore, user) {
       },
 
       updateCalendar() {
-        console.log('[DEBUG] updateCalendar() started. this.calendar exists:', !!this.calendar);
-        if (!this.calendar) {
-          console.log('[DEBUG] ABORT: Calendar not initialized');
-          return;
-        }
-        this.calendar.getEvents().forEach(e => e.remove());
-        console.log('[DEBUG] Cleared old events');
+          console.log(`[DEBUG] updateCalendar() called. Filter: ${this.activeModuleFilter}`);
+          if (!this.calendar) {
+              console.log("[DEBUG] Calendar not ready, aborting update.");
+              return;
+          }
 
-        this.events.forEach(event => {
-          console.log('[DEBUG] Adding event:', event.title, event.date, event.startTime);
-          const docId = this.docIdFor(event); // Generate the ID
-           console.log(`[DEBUG] Adding event with docId: ${docId}`);
-           this.calendar.addEvent({
-             id: docId, // <-- SET FULLCALENDAR'S NATIVE ID
-             title: `${event.title} (${event.type})`,
-             start: `${event.date}T${event.startTime}`,
-             end: event.endTime ? `${event.date}T${event.endTime}` : null,
-             allDay: false,
-             className: event.type
-           });
-        });
-        console.log('[DEBUG] updateCalendar() finished');
+          // 1. Clear all old events
+          this.calendar.removeAllEvents();
+
+          // --- THIS IS THE NEW LOGIC ---
+          // 2. Filter the events list based on the active filter
+          const filteredEvents = this.events.filter(event => {
+              // If no filter is active, show all events
+              if (!this.activeModuleFilter) {
+                  return true; 
+              }
+
+              // If a filter is active, only show events that match
+              // We'll show all non-lessons, and lessons that match the code
+              if (event.type !== 'lesson') {
+                  return true; // Always show non-lessons (e.g., lunch, gym)
+              }
+
+              // For lessons, check if the course code matches
+              return event.courseCode && event.courseCode.toUpperCase() === this.activeModuleFilter;
+          });
+          // --- END OF NEW LOGIC ---
+
+          // 3. Add the *filtered* events to the calendar
+          console.log(`[DEBUG] Rendering ${filteredEvents.length} of ${this.events.length} total events.`);
+          filteredEvents.forEach(event => {
+              const docId = this.docIdFor(event); 
+              this.calendar.addEvent({
+                  id: docId, 
+                  title: `${event.title} (${event.type})`,
+                  start: `${event.date}T${event.startTime}`,
+                  end: event.endTime ? `${event.date}T${event.endTime}` : null,
+                  allDay: false,
+                  className: event.type
+              });
+          });
       },
-
     },
     mounted() {
       this.loadSemester();
