@@ -63,7 +63,7 @@ createApp({
                 window.location.href = '../semester.html';
             } catch (error) {
                 console.error("Sign up error:", error);
-                this.error = error.message || 'Sign up failed. Try again.';
+                this.error = this.getFriendlyError(error);
             } finally {
                 this.loading = false;
             }
@@ -86,11 +86,27 @@ createApp({
                 window.location.href = semesterDoc.exists() ? '../dashboard.html' : '../semester.html';
             } catch (error) {
                 console.error("Sign in error:", error);
-                this.error = error.message || 'Login failed.';
+                this.error = this.getFriendlyError(error);
             } finally {
                 this.loading = false;
             }
-        }
+        },
+
+        getFriendlyError(error) {
+            switch (error.code) {
+                case 'auth/user-not-found':
+                case 'auth/wrong-password':
+                    return 'Invalid email or password.';
+                case 'auth/invalid-email':
+                    return 'Please enter a valid email address.';
+                case 'auth/email-already-in-use':
+                    return 'This email is already registered. Please sign in.';
+                case 'auth/weak-password':
+                    return 'Password must be at least 6 characters long.';
+                default:
+                    return error.message || 'An unknown error occurred.';
+            }
+        },
     },
     mounted() {
         onAuthStateChanged(auth, (user) => {
