@@ -411,7 +411,7 @@ function bootApp(semesterFromFirestore, user) {
       },
 
       logout() {
-        signOut(auth).then(() => window.location.href = '../LoginPage/index.html');
+        signOut(auth).then(() => window.location.href = './LoginPage/index.html');
       },
 
       // Helper to format time as HH:MM (e.g., "09:00")

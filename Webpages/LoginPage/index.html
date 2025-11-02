@@ -43,6 +43,13 @@
                         <a href="#" class="forgot">Forgot Password?</a>
                     </div>
                     <div class="mt-2 text-danger" v-if="error">{{ error }}</div>
+
+                    <div class="text-center text-muted my-3">OR</div>
+
+                    <button type="button" class="btn btn-light w-100 border" @click="handleGoogleSignIn">
+                        <i class='bx bxl-google' style="vertical-align: middle; margin-right: 8px;"></i>
+                        Sign in with Google
+                    </button>
                 </form>
             </div>
 

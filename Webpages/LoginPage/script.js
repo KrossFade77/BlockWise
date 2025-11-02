@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -105,6 +105,40 @@ createApp({
                     return 'Password must be at least 6 characters long.';
                 default:
                     return error.message || 'An unknown error occurred.';
+            }
+        },
+
+        async handleGoogleSignIn() {
+            console.log("[DEBUG] handleGoogleSignIn called.");
+            this.loading = true;
+            this.error = '';
+
+            const provider = new GoogleAuthProvider(); // Create the Google provider
+
+            try {
+                // 1. Trigger the Google Sign-In popup
+                const userCredential = await signInWithPopup(auth, provider);
+                const user = userCredential.user;
+                console.log("[DEBUG] Google Sign-In successful:", user.email);
+
+                // 2. Check if they have a semester doc (just like in normal sign-in)
+                const semesterDoc = await getDoc(doc(db, user.uid, "semester"));
+
+                // 3. Redirect to the correct page
+                if (semesterDoc.exists()) {
+                    console.log("[DEBUG] Semester doc found. Redirecting to dashboard.");
+                    window.location.href = '../dashboard.html';
+                } else {
+                    console.log("[DEBUG] No semester doc. Redirecting to semester setup.");
+                    window.location.href = '../semester.html';
+                }
+
+            } catch (error) {
+                console.error("[DEBUG] Google Sign-in error:", error);
+                this.error = this.getFriendlyError(error); // Show a friendly error
+
+            } finally {
+                this.loading = false;
             }
         },
     },
