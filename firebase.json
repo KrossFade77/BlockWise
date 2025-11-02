@@ -25,6 +25,10 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    "rewrites": [
+      {"source": "api/generate", "function": "generate"},
+      {"source": "api/parse", "function": "parse"}
     ]
   }
 }
