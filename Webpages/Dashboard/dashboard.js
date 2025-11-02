@@ -85,6 +85,7 @@ function bootApp(semesterFromFirestore, user) {
         calendar: null,
         selectedEvent: {},
         selectedEventElement: null,
+        originalEventForEdit: null,
         editMode: false,
         semester: { startDate: '', endDate: '' },
       };
@@ -240,6 +241,58 @@ function bootApp(semesterFromFirestore, user) {
         if (this.modalInstance) this.modalInstance.hide();
       },
 
+      async saveEditedEvent() {
+        console.log("[DEBUG] saveEditedEvent() triggered.");
+
+        // 1. Get the new (edited) data
+        const newData = this.selectedEvent;
+        // 2. Get the original data we saved
+        const oldData = this.originalEventForEdit;
+
+        console.log("[DEBUG] Old data:", oldData);
+        console.log("[DEBUG] New data:", newData);
+
+        // 3. Check if the ID needs to change
+        // This happens if the user changed the title, date, or startTime
+        const oldId = this.docIdFor(oldData);
+        const newId = this.docIdFor(newData);
+
+        try {
+            // 4. Update Firestore
+            if (oldId !== newId) {
+                // ID changed: we must delete the old doc and create a new one
+                console.log(`[DEBUG] ID changed. Deleting ${oldId}, Creating ${newId}`);
+                await this.deleteEventFromFirestore(oldData);
+                await this.saveEventToFirestore(newData);
+            } else {
+                // ID is the same: just update the existing doc
+                console.log(`[DEBUG] ID same. Merging data for ${newId}`);
+                await this.saveEventToFirestore(newData);
+            }
+
+            // 5. Update the local `this.events` array
+            const index = this.events.findIndex(e => this.docIdFor(e) === oldId);
+            if (index !== -1) {
+                // Replace the old event with the new one
+                this.events.splice(index, 1, newData);
+            } else {
+                // This shouldn't happen, but as a fallback, add it
+                this.events.push(newData);
+            }
+
+            // 6. Refresh the calendar
+            this.updateCalendar();
+
+            // 7. Close the modal
+            this.modalInstance.hide();
+            this.editMode = false;
+
+        } catch (e) {
+            console.error("[DEBUG] Error saving edited event:", e);
+            alert("There was an error saving your changes. Please check the console.");
+        }
+    },
+
       isEventWithinSemester(date) {
         if (!this.semester.startDate || !this.semester.endDate) return true;
         const eventDate = new Date(date);
@@ -360,27 +413,34 @@ function bootApp(semesterFromFirestore, user) {
                   new Date(this.semester.endDate).getDate() + 1
                 )).toISOString().split('T')[0]
               },
+              // REPLACE the old eventClick handler with this:
               eventClick: (info) => {
-                this.selectedEventElement = info.event;
-                const eventData = this.events.find(e => 
-                  e.title === info.event.title.replace(` (${info.event.classNames[0]})`, '') &&
-                  e.type === info.event.classNames[0] &&
-                  e.date === info.event.start.toISOString().split('T')[0]
-                );
+                 console.log("[DEBUG] Event clicked, ID:", info.event.id);
 
-                this.selectedEvent = {
-                  title: info.event.title.replace(` (${info.event.classNames[0]})`, ''),
-                  type: info.event.classNames[0],
-                  date: info.event.start.toISOString().split('T')[0],
-                  startTime: eventData?.startTime || info.event.start.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
-                  endTime: eventData?.endTime || '',
-                  ...eventData
-                };
+                 // Use the ID to find the event in our master array
+                   const originalEvent = this.events.find(e => this.docIdFor(e) === info.event.id);
 
-                const modalEl = document.getElementById('eventModal');
-                const modal = new bootstrap.Modal(modalEl);
-                this.modalInstance = modal;
-                modal.show();
+                 if (!originalEvent) {
+                   console.error("[DEBUG] CRITICAL: No event found for ID!", info.event.id);
+                   return; // Can't do anything
+                 }
+
+                 // --- THIS IS THE KEY FIX ---
+                // Store the original event from the array
+                 this.originalEventForEdit = originalEvent;
+                 // Create a *copy* for the modal form to edit
+                 this.selectedEvent = { ...originalEvent };
+                 // --- END OF FIX ---
+
+                 this.selectedEventElement = info.event; // Still need this for .remove()
+
+                 console.log("[DEBUG] Original event set:", this.originalEventForEdit);
+                 console.log("[DEBUG] Copy for modal set:", this.selectedEvent);
+
+                 const modalEl = document.getElementById('eventModal');
+                 const modal = new bootstrap.Modal(modalEl);
+                 this.modalInstance = modal;
+                 modal.show();
               },
 
               select: (selectionInfo) => {
@@ -439,13 +499,16 @@ function bootApp(semesterFromFirestore, user) {
 
         this.events.forEach(event => {
           console.log('[DEBUG] Adding event:', event.title, event.date, event.startTime);
-          this.calendar.addEvent({
-            title: `${event.title} (${event.type})`,
-            start: `${event.date}T${event.startTime}`,
-            end: event.endTime ? `${event.date}T${event.endTime}` : null,
-            allDay: false,
-            className: event.type
-          });
+          const docId = this.docIdFor(event); // Generate the ID
+           console.log(`[DEBUG] Adding event with docId: ${docId}`);
+           this.calendar.addEvent({
+             id: docId, // <-- SET FULLCALENDAR'S NATIVE ID
+             title: `${event.title} (${event.type})`,
+             start: `${event.date}T${event.startTime}`,
+             end: event.endTime ? `${event.date}T${event.endTime}` : null,
+             allDay: false,
+             className: event.type
+           });
         });
         console.log('[DEBUG] updateCalendar() finished');
       },
