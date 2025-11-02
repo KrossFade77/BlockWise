@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI MCQ Generator (Interactive)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background-color: #f8f9fa;
+    }
+    textarea {
+      width: 100%;
+      margin-bottom: 15px;
+      font-family: monospace;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .question {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      margin: 20px 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .option {
+      display: block;
+      margin: 5px 0;
+    }
+    .result {
+      font-weight: bold;
+      margin-top: 8px;
+    }
+    .correct { color: green; }
+    .wrong { color: red; }
+  </style>
+</head>
+<body>
+  <h2>AI MCQ Generator</h2>
+  <p>Paste your notes below. The AI will automatically create 10 MCQs (with answers) based on them.</p>
+
+  <textarea id="notes" rows="12" cols="70"></textarea><br>
+  <button onclick="sendPrompt()">Generate MCQs</button>
+
+  <h3>Generated Questions:</h3>
+  <div id="quiz"></div>
+  <button id="submitBtn" style="display:none;" onclick="checkAllAnswers()">Submit All</button>
+
+  <script>
+    const textarea = document.getElementById("notes");
+
+    const fixedText = 
+`=== Instructions (do not edit) ===
+Enter your notes below. The AI will generate 10 multiple-choice questions (with answers) based on your notes.
+
+----------------------------------
+`;
+
+    textarea.value = fixedText;
+
+    textarea.addEventListener("input", () => {
+      if (!textarea.value.startsWith(fixedText)) {
+        textarea.value = fixedText + textarea.value.slice(fixedText.length);
+      }
+    });
+
+    textarea.addEventListener("keydown", (e) => {
+      if (textarea.selectionStart < fixedText.length &&
+        ["Backspace", "ArrowUp", "ArrowLeft"].includes(e.key)) {
+        e.preventDefault();
+        textarea.setSelectionRange(fixedText.length, fixedText.length);
+      }
+    });
+
+    textarea.addEventListener("focus", () => {
+      if (textarea.selectionStart < fixedText.length) {
+        textarea.setSelectionRange(fixedText.length, fixedText.length);
+      }
+    });
+
+    async function sendPrompt() {
+      const notes = textarea.value.slice(fixedText.length).trim();
+      const quizContainer = document.getElementById("quiz");
+      const submitBtn = document.getElementById("submitBtn");
+
+      quizContainer.innerHTML = "<p><em>Loading questions...</em></p>";
+      submitBtn.style.display = "none";
+
+      const systemInstruction = 
+        "You are an educational AI. Based on the provided notes, generate 10 multiple-choice questions in this exact format: " +
+        "Q1. [question]\\nA) [option]\\nB) [option]\\nC) [option]\\nD) [option]\\nAnswer: [A/B/C/D]\\n\\nRepeat for 10 questions.";
+
+      const fullPrompt = `${systemInstruction}\n\nHere are the notes:\n${notes}`;
+
+      try {
+        const response = await fetch("http://127.0.0.1:5000/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: fullPrompt })
+        });
+
+        if (!response.ok) throw new Error(`Server error: ${response.status}`);
+        const data = await response.json();
+
+        if (data.result) {
+          renderQuestions(data.result);
+          submitBtn.style.display = "block";
+        } else {
+          quizContainer.innerHTML = "<p>Error: No questions received.</p>";
+        }
+      } catch (err) {
+        quizContainer.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
+      }
+    }
+
+    function renderQuestions(text) {
+      const quizContainer = document.getElementById("quiz");
+      quizContainer.innerHTML = "";
+
+      const questionBlocks = text.split(/Q\d+\./).filter(q => q.trim().length > 0);
+
+      questionBlocks.forEach((block, i) => {
+        const lines = block.trim().split("\n");
+        const questionText = lines[0].trim();
+        const options = lines.slice(1, 5);
+        const answerLine = lines.find(line => line.startsWith("Answer"));
+        const correct = answerLine ? answerLine.split(":")[1].trim().toUpperCase() : null;
+
+        const div = document.createElement("div");
+        div.classList.add("question");
+        div.dataset.correct = correct;
+
+        div.innerHTML = `
+          <p><strong>Q${i + 1}.</strong> ${questionText}</p>
+          ${options.map((opt, j) => {
+            const val = opt.trim()[0];
+            return `<label class="option"><input type="radio" name="q${i + 1}" value="${val}"> ${opt}</label>`;
+          }).join("")}
+          <div class="result" id="result${i + 1}"></div>
+        `;
+
+        quizContainer.appendChild(div);
+      });
+    }
+
+    function checkAllAnswers() {
+      const questions = document.querySelectorAll(".question");
+      questions.forEach((q, i) => {
+        const selected = q.querySelector("input[type='radio']:checked");
+        const correct = q.dataset.correct;
+        const resultDiv = q.querySelector(".result");
+
+        if (!selected) {
+          resultDiv.textContent = "⚠️ Please select an option.";
+          resultDiv.className = "result wrong";
+        } else if (selected.value === correct) {
+          resultDiv.textContent = "✅ Correct!";
+          resultDiv.className = "result correct";
+        } else {
+          resultDiv.textContent = `❌ Wrong! Correct answer: ${correct}`;
+          resultDiv.className = "result wrong";
+        }
+      });
+    }
+  </script>
+</body>
+</html>
