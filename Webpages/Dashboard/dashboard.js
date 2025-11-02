@@ -524,7 +524,7 @@ function bootApp(semesterFromFirestore, user) {
           if (calendarEl && window.FullCalendar && !this.calendar) {
             this.calendar = new window.FullCalendar.Calendar(calendarEl, {
               initialView: 'timeGridWeek',
-              headerToolbar: { left: 'prev,next', center: 'title', right: 'timeGridWeek,timeGridDay' },
+              headerToolbar: { left: 'prev,next', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay' },
               editable: true,
               selectable: true,
               height: 'auto',
