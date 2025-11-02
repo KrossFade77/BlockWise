@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI MCQ Generator</title>
+</head>
+<body>
+  <h2>AI MCQ Generator</h2>
+  <p>Paste your notes below. The AI will automatically create 10 MCQ questions (with answers) based on them.</p>
+
+  <textarea id="notes" rows="12" cols="70"></textarea><br>
+  <button onclick="sendPrompt()">Generate MCQs</button>
+
+  <h3>Generated Questions:</h3>
+  <pre id="output"></pre>
+
+  <script>
+    const textarea = document.getElementById("notes");
+
+    // 🔹 Fixed instruction inside textarea
+    const fixedText = 
+`=== Instructions (do not edit) ===
+Enter your notes below. The AI will generate 10 multiple-choice questions (with answers) based on your notes.
+
+----------------------------------
+`;
+
+    // Set the default text
+    textarea.value = fixedText;
+
+    // Prevent deleting or modifying the fixed part
+    textarea.addEventListener("input", () => {
+      if (!textarea.value.startsWith(fixedText)) {
+        textarea.value = fixedText + textarea.value.slice(fixedText.length);
+      }
+    });
+
+    // Prevent cursor movement into the fixed text
+    textarea.addEventListener("keydown", (e) => {
+      if (
+        textarea.selectionStart < fixedText.length &&
+        ["Backspace", "ArrowUp", "ArrowLeft"].includes(e.key)
+      ) {
+        e.preventDefault();
+        textarea.setSelectionRange(fixedText.length, fixedText.length);
+      }
+    });
+
+    // Always set cursor below fixed text
+    textarea.addEventListener("focus", () => {
+      if (textarea.selectionStart < fixedText.length) {
+        textarea.setSelectionRange(fixedText.length, fixedText.length);
+      }
+    });
+
+    // 🧠 Main function to send notes to Flask
+    async function sendPrompt() {
+      const notes = textarea.value.slice(fixedText.length).trim(); // Only take user's notes
+      const output = document.getElementById("output");
+      output.innerText = "Loading...";
+
+      const systemInstruction = 
+        "You are an educational AI. Based on the provided notes, generate 10 multiple-choice questions with 4 options each and include the correct answer clearly.";
+
+      const fullPrompt = `${systemInstruction}\n\nHere are the notes:\n${notes}`;
+
+      try {
+        const response = await fetch("http://127.0.0.1:5000/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: fullPrompt })
+        });
+
+        if (!response.ok) throw new Error(`Server error: ${response.status}`);
+        const data = await response.json();
+        output.innerText = data.result || data.error;
+      } catch (err) {
+        output.innerText = "Error: " + err.message;
+      }
+    }
+  </script>
+</body>
+</html>
