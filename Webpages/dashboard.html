@@ -15,43 +15,38 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="d-flex align-items-center gap-3">
                 <button class="btn btn-outline-secondary mb-3" @click="toggleSidebar" title="Toggle Modules">
-                 <i class="fas fa-bars"></i>
-             </button>
-
-             <button class="btn btn-primary mb-3" @click="showEventForm">Add Event</button>
-             <button class="btn btn-success mb-3" @click="showConfig = !showConfig">Scheduler Settings</button>
-         </div>
+                <i class="fas fa-bars"></i>
+                </button>
+                <button class="btn btn-primary mb-3" @click="showEventForm">Add Event</button>
+                <button class="btn btn-success mb-3" @click="showConfig = !showConfig">Scheduler Settings</button>
+            </div>
 
             <button class="btn btn-warning" @click="generateSchedule">Generate Schedule</button>
-
             <button class="btn btn-danger btn-sm" @click="logout">Logout</button>
 
-            </div> <div class="row">
-
+        </div> 
+        
+        <div class="row">
             <div class="col-md-3" v-if="showSidebar">
                 <h4>My Modules</h4>
-                 <div class="list-group" id="module-list">
-                     <a v-if="activeModuleFilter" 
-                    href="#" @click.prevent="setFilter(null)" 
+                <div class="list-group" id="module-list">
+                    <a v-if="activeModuleFilter" href="#" @click.prevent="setFilter(null)" 
                     class="list-group-item list-group-item-action list-group-item-danger d-flex justify-content-between align-items-center">
-                     <span>Clear Filter ({{ activeModuleFilter }})</span>
-                     <i class="fas fa-times"></i>
-                     </a>
-
-                     <div v-if="uniqueModules.length === 0" class="list-group-item">
+                    <span>Clear Filter ({{ activeModuleFilter }})</span>
+                    <i class="fas fa-times"></i>
+                    </a>
+                    <div v-if="uniqueModules.length === 0" class="list-group-item">
                      <small class="text-muted">No modules added yet.</small>
-                 </div>
+                    </div>
 
-                         <a v-for="mod in uniqueModules" :key="mod.code" 
-                        href="#" @click.prevent="setFilter(mod.code)" 
-                        class="list-group-item list-group-item-action"
-                        :class="{ 'active': mod.code === activeModuleFilter }"> 
-                         <div class="d-flex w-100 justify-content-between">
-                             <h6 class="mb-1">{{ mod.code }}</h6>
-                             <small>Weight: {{ mod.weight }}/5</small>
-                         </div>
-                         <p class="mb-1 small">{{ mod.name }}</p>
-                     </a>
+                    <a v-for="mod in uniqueModules" :key="mod.code" href="#" @click.prevent="setFilter(mod.code)" 
+                    :class="['list-group-item', 'list-group-item-action', { 'active': mod.code === activeModuleFilter }]"> 
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ mod.code }}</h6>
+                            <small>Weight: {{ mod.weight }}/5</small>
+                        </div>
+                            <p class="mb-1 small">{{ mod.name }}</p>
+                    </a>
                  </div>
             </div>
 
@@ -63,30 +58,30 @@
                 >
                 Generate Schedule
             </button> -->
-        <!-- Global Scheduler Config -->
-        <div v-if="showConfig" class="card p-3 mb-4"> 
-            <h5>Scheduler Settings</h5>
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Daily Study Start</label>
-                    <input type="time" class="form-control" v-model="schedulerConfig.dailyStart"> 
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Daily Study End</label>
-                    <input type="time" class="form-control" v-model="schedulerConfig.dailyEnd"> 
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Min Study Duration (mins)</label>
-                    <input type="number" class="form-control" v-model.number="schedulerConfig.minStudyDuration"> 
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Max Study Duration (mins)</label>
-                    <input type="number" class="form-control" v-model.number="schedulerConfig.maxStudyDuration"> 
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Weeks to generate</label>
-                    <input type="number" min="1" max="16" class="form-control" v-model.number="schedulerConfig.weeksToGenerate" placeholder="e.g., 4">
-                </div>
+            <!-- Global Scheduler Config -->
+            <div v-if="showConfig" class="card p-3 mb-4"> 
+                <h5>Scheduler Settings</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Daily Study Start</label>
+                        <input type="time" class="form-control" v-model="schedulerConfig.dailyStart"> 
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Daily Study End</label>
+                        <input type="time" class="form-control" v-model="schedulerConfig.dailyEnd"> 
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Min Study Duration (mins)</label>
+                        <input type="number" class="form-control" v-model.number="schedulerConfig.minStudyDuration"> 
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Max Study Duration (mins)</label>
+                        <input type="number" class="form-control" v-model.number="schedulerConfig.maxStudyDuration"> 
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Weeks to generate</label>
+                        <input type="number" min="1" max="16" class="form-control" v-model.number="schedulerConfig.weeksToGenerate" placeholder="e.g., 4">
+                    </div>
             </div>
             <button class="btn btn-primary" @click="saveSchedulerConfig">Save Config</button> 
         </div>

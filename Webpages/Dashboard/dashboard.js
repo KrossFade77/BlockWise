@@ -89,6 +89,7 @@ function bootApp(semesterFromFirestore, user) {
         editMode: false,
         semester: { startDate: '', endDate: '' },
         showSidebar: true,
+        activeModuleFilter: null,
       };
     },
 
@@ -228,14 +229,12 @@ function bootApp(semesterFromFirestore, user) {
           courseName: this.event.courseName || '',
           weightage: this.event.weightage || 1,
           repeat: !!this.event.repeat,
+          originalDate: this.event.date
         };
       
         // expand if repeating
         const toAdd = base.repeat
-        ? this.expandWeekly(base, this.semester).map(e => ({
-            ...e,
-            originalDate: base.date  // ADD THIS
-          }))
+        ? this.expandWeekly(base, this.semester)
         : [base];
       
         // add locally
@@ -272,29 +271,41 @@ function bootApp(semesterFromFirestore, user) {
       },
 
       async deleteEvent() {
-        if (!this.selectedEventElement) return;
-        const event = this.selectedEventElement;
-        const title = event.title.replace(` (${event.classNames[0]})`, '');
-        const type = event.classNames[0];
-        const date = event.start.toISOString().split('T')[0];
-        const isRecurring = !!this.events.find(e => e.title === title && e.type === type && e.repeat);
+          if (!this.originalEventForEdit) {
+              console.error("Cannot delete: originalEventForEdit is not set.");
+              return;
+          }
 
-        // if event is recurring, delete all instances
-        if (isRecurring && window.bootstrap) {
-            const modal = new bootstrap.Modal('#deleteRecurringModal', { backdrop: 'static', keyboard: false});
-            modal.show()
-            return;
-        }
+          const eventToDelete = this.originalEventForEdit;
 
-        // this.events = this.events.filter(e => e.title !== title || e.type !== type);
-        this.events = this.events.filter(e => !(e.title === title && e.type === type && e.date === date));
+          // 1. Check if the event is recurring
+          if (eventToDelete.repeat) {
+              // It is a recurring event, show the "Delete All" modal
+              const modal = new bootstrap.Modal('#deleteRecurringModal', { backdrop: 'static', keyboard: false });
+              modal.show();
+              return; // Stop here and let performDelete() take over
+          }
 
-        // remove exact occurance from firestore
-        const target = { title, type, date, startTime: this.selectedEvent.startTime };
-        await this.deleteEventFromFirestore(target); // 🔹 Delete from Firestore
+          // 2. It's a single, non-recurring event. Delete it directly.
+          try {
+              console.log("[DEBUG] Deleting single event:", eventToDelete);
 
-        event.remove();
-        if (this.modalInstance) this.modalInstance.hide();
+              // Remove from local array
+              this.events = this.events.filter(e => this.docIdFor(e) !== this.docIdFor(eventToDelete));
+
+              // Remove from Firestore
+              await this.deleteEventFromFirestore(eventToDelete);
+
+              // Remove from calendar UI
+              this.selectedEventElement.remove();
+
+              if (this.modalInstance) this.modalInstance.hide();
+              this.updateCalendar(); // Refresh the calendar
+
+          } catch (e) {
+              console.error("Error deleting single event:", e);
+              alert("Failed to delete event. Check console.");
+          }
       },
 
       async saveEditedEvent() {
@@ -349,6 +360,48 @@ function bootApp(semesterFromFirestore, user) {
         }
     },
 
+    async handleEventChange(info) {
+      console.log(`[DEBUG] Event changed: ${info.event.id}`);
+      const oldEvent = this.events.find(e => this.docIdFor(e) === info.event.id);
+      if (!oldEvent) {
+        console.error("CRITICAL: Could not find event to update after drop/resize!");
+        return;
+      }
+
+        // Create new event data based on the drop
+        const newEvent = {
+          ...oldEvent, // Copy all old data (title, type, weight, etc.)
+          date: this.formatDate(info.event.start),
+          startTime: this.formatTime(info.event.start),
+          endTime: info.event.end ? this.formatTime(info.event.end) : oldEvent.endTime,
+        };
+
+      // Get old and new IDs
+      const oldId = this.docIdFor(oldEvent);
+      const newId = this.docIdFor(newEvent);
+      console.log(`[DEBUG] ID changing from ${oldId} to ${newId}`);
+
+      try {
+        // Update Firestore (delete old, create new)
+        await this.deleteEventFromFirestore(oldEvent);
+        await this.saveEventToFirestore(newEvent);
+
+        // Update local 'this.events' array
+        const index = this.events.findIndex(e => this.docIdFor(e) === oldId);
+        if (index !== -1) {
+          this.events.splice(index, 1, newEvent);
+        }
+
+        // Refresh module list
+        this.updateCalendar(); 
+      } catch (e) {
+          console.error("Error updating event after drop:", e);
+          // Revert the visual change on failure
+          info.revert();
+      }
+     },
+
+
       isEventWithinSemester(date) {
         if (!this.semester.startDate || !this.semester.endDate) return true;
         const eventDate = new Date(date);
@@ -359,6 +412,20 @@ function bootApp(semesterFromFirestore, user) {
 
       logout() {
         signOut(auth).then(() => window.location.href = '../LoginPage/index.html');
+      },
+
+      // Helper to format time as HH:MM (e.g., "09:00")
+      formatTime(date) {
+        return date.toLocaleTimeString('en-US', {
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+      },
+
+      // Helper to format date as YYYY-MM-DD
+      formatDate(date) {
+        return date.toISOString().split('T')[0];
       },
 
       confirmDelete(mode) {
@@ -502,36 +569,32 @@ function bootApp(semesterFromFirestore, user) {
               select: (selectionInfo) => {
                 console.log('[DEBUG] Calendar selected:', selectionInfo);
 
-                // Helper to format time as HH:MM (e.g., "09:00")
-                const formatTime = (date) => {
-                    return date.toLocaleTimeString('en-US', {
-                        hour12: false,
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
-                };
-
-                // Helper to format date as YYYY-MM-DD
-                const formatDate = (date) => {
-                    return date.toISOString().split('T')[0];
-                };
-
                 const start = selectionInfo.start;
                 const end = selectionInfo.end;
 
                 // Pre-fill the event form data
-                this.event.date = formatDate(start);
-                this.event.startTime = formatTime(start);
+                this.event.date = this.formatDate(start);
+                this.event.startTime = this.formatTime(start);
 
                 // FullCalendar's 'end' is exclusive. 
                 // E.g., a drag from 9:00 to 10:00 will have an 'end' of 10:00.
-                this.event.endTime = formatTime(end);
+                this.event.endTime = this.formatTime(end);
 
                 // Open the form
                 this.showForm = true;
 
                 console.log(`[DEBUG] Set event data: ${this.event.date} from ${this.event.startTime} to ${this.event.endTime}`);
+            },
+
+            eventDrop: (info) => {
+              this.handleEventChange(info);
+            },
+
+            eventResize: (info) => {
+              this.handleEventChange(info);
             }
+
+
             });
             this.calendar.render();
             this.updateCalendar();
