@@ -6,11 +6,12 @@
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Custom CSS for slider and animations -->
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="./style.css">
     <!-- Boxicons for icons -->
     <link href='https://unpkg.com/boxicons@2.0.9/css/boxicons.min.css' rel='stylesheet'>
     <!-- Vue.js -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+
     <title>BlockWise - Login</title>
 </head>
 <body>
@@ -32,7 +33,7 @@
                     <i class='bx bx-log-in signinimage'></i>
                     <h3>Sign In</h3>
                     <div class="mb-3">
-                        <input type="text" class="form-control" placeholder="Username" v-model="signin.username" required>
+                        <input type="email" class="form-control" placeholder="Email" v-model="signin.email" required>
                     </div>
                     <div class="mb-3">
                         <input type="password" class="form-control" placeholder="Password" v-model="signin.password" required>
@@ -41,16 +42,15 @@
                     <div class="mt-2">
                         <a href="#" class="forgot">Forgot Password?</a>
                     </div>
+                    <div class="mt-2 text-danger" v-if="error">{{ error }}</div>
                 </form>
             </div>
+
             <!-- Sign Up Form -->
             <div class="form signupForm">
                 <form @submit.prevent="handleSignUp">
                     <i class='bx bxs-user signupimage'></i>
                     <h3>Sign Up</h3>
-                    <div class="mb-3">
-                        <input type="text" class="form-control" placeholder="Username" v-model="signup.username" required>
-                    </div>
                     <div class="mb-3">
                         <input type="email" class="form-control" placeholder="Email Address" v-model="signup.email" required>
                     </div>
@@ -61,10 +61,11 @@
                         <input type="password" class="form-control" placeholder="Confirm Password" v-model="signup.confirmPassword" required>
                     </div>
                     <button type="submit" class="btn btn-primary">Register</button>
+                    <div class="mt-2 text-danger" v-if="error">{{ error }}</div>
                 </form>
             </div>
         </div>
     </div>
-    <script src="script.js"></script>
+    <script type="module" src="./script.js"></script>
 </body>
 </html>
