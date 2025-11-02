@@ -350,6 +350,7 @@ function bootApp(semesterFromFirestore, user) {
               initialView: 'timeGridWeek',
               headerToolbar: { left: 'prev,next', center: 'title', right: 'timeGridWeek,timeGridDay' },
               editable: true,
+              selectable: true,
               height: 'auto',
               slotMinTime: '08:00:00',
               slotMaxTime: '22:00:00',
@@ -380,7 +381,41 @@ function bootApp(semesterFromFirestore, user) {
                 const modal = new bootstrap.Modal(modalEl);
                 this.modalInstance = modal;
                 modal.show();
-              }
+              },
+
+              select: (selectionInfo) => {
+                console.log('[DEBUG] Calendar selected:', selectionInfo);
+
+                // Helper to format time as HH:MM (e.g., "09:00")
+                const formatTime = (date) => {
+                    return date.toLocaleTimeString('en-US', {
+                        hour12: false,
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                };
+
+                // Helper to format date as YYYY-MM-DD
+                const formatDate = (date) => {
+                    return date.toISOString().split('T')[0];
+                };
+
+                const start = selectionInfo.start;
+                const end = selectionInfo.end;
+
+                // Pre-fill the event form data
+                this.event.date = formatDate(start);
+                this.event.startTime = formatTime(start);
+
+                // FullCalendar's 'end' is exclusive. 
+                // E.g., a drag from 9:00 to 10:00 will have an 'end' of 10:00.
+                this.event.endTime = formatTime(end);
+
+                // Open the form
+                this.showForm = true;
+
+                console.log(`[DEBUG] Set event data: ${this.event.date} from ${this.event.startTime} to ${this.event.endTime}`);
+            }
             });
             this.calendar.render();
             this.updateCalendar();
