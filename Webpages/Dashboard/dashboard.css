@@ -15,11 +15,29 @@
     color: white;
 }
 
-/* Style non-lesson events (green) */
+/* Style non-lesson events (green, striped) */
 .fc-event.non-lesson {
-    background-color: #2e7d32;
-    border-color: #1b5e20;
-    color: white;
+  background: repeating-linear-gradient(
+    -45deg,
+    #2e7d32,
+    #2e7d32 5px,
+    #388e3c 5px,
+    #388e3c 10px
+  );
+  border-color: #1b5e20;
+  color: white;
+}
+
+/* Style study sessions (Purple, dashed) */
+.fc-event.study {
+  background-color: #ede7f6; /* Light Lavender */
+  border: 2px dashed #7e57c2; /* Medium Purple */
+}
+
+/* Set the text color on the title and time elements */
+.fc-event.study .fc-event-title,
+.fc-event.study .fc-event-time {
+  color: #4527a0; /* Dark Purple Text */
 }
 
 /* Ensure event text is readable */
@@ -43,3 +61,4 @@
 .lesson .fc-event-title::before { content: "\f02d"; }     /* book */
 .non-lesson .fc-event-title::before { content: "\f005"; } /* star */
 .review-session .fc-event-title::before { content: "\f0f3"; } /* bell */
+.study .fc-event-title::before { content: "\f080"; }       /* chart/stats icon */
