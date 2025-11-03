@@ -69,7 +69,7 @@ function bootApp(semesterFromFirestore, user) {
           date: '',
           startTime: '',
           endTime: '',
-          type: 'lesson',
+          type: '',
           courseCode: '',
           courseName: '',
           weightage: 1,
@@ -446,6 +446,153 @@ function bootApp(semesterFromFirestore, user) {
         this.performDelete();
       },
 
+      async loadSchedulerConfig() { // Firestore approach
+        try {
+          const ref = doc(db, this.uid, 'schedulerConfig');
+          const snap = await getDoc(ref);
+          if (snap.exists()) {
+            const d = snap.data();
+            this.schedulerConfig = {
+              dailyStart: d.dailyStart || '10:00',
+              dailyEnd: d.dailyEnd || '22:00',
+              minStudyDuration: d.minStudyDuration ?? 30,
+              weeksToGenerate: d.weeksToGenerate ?? 4
+            };
+            console.log('[DEBUG] Loaded schedulerConfig (FS):', this.schedulerConfig);
+          } else {
+            console.log('[DEBUG] No schedulerConfig doc yet; using defaults.');
+          }
+        } catch (error) {
+          console.error('[DEBUG] loadSchedulerConfig (FS) failed:', error);
+        }
+      },
+
+      // [localStorage] approach
+      // loadSchedulerConfig() { 
+      //   try {
+      //     const raw = localStorage.getItem('schedulerConfig');
+      //     if (raw) {
+      //       this.schedulerConfig = JSON.parse(raw);
+      //       console.log('[DEBUG] Loaded schedulerConfig (LS):', this.schedulerConfig);
+      //     } else {
+      //       console.log('[DEBUG] No schedulerConfig in LS; using defaults.');
+      //     }
+      //   } catch (e) {
+      //     console.error('[DEBUG] loadSchedulerConfig (LS) failed:', e);
+      //   }
+      // },
+
+      async saveSchedulerConfig() { // Firestore approach
+        const sc = this.schedulerConfig;
+        if (!sc.dailyStart || !sc.dailyEnd || !sc.minStudyDuration || !sc.weeksToGenerate) {
+          alert('Please fill in all scheduler configuration fields before saving.');
+          return;
+        }
+
+        try {
+          const ref = doc(db, this.uid, 'schedulerConfig');
+          await setDoc(ref, sc, { merge: true });
+          alert('Scheduler configuration saved successfully!');
+          this.showConfig = false;
+        } catch (error) {
+          console.error('[DEBUG] saveSchedulerConfig (FS) failed:', e);
+          alert('Failed to save scheduler configuration. Check console.');
+        }
+      },
+      
+      // [localStorage] approach
+      // saveSchedulerConfig() {
+      //   const sc = this.schedulerConfig;
+      //   if (!sc.dailyStart || !sc.dailyEnd || !sc.minStudyDuration || !sc.weeksToGenerate) {
+      //     alert('Please fill in all scheduler configuration fields before saving.');
+      //     return;
+      //   }
+
+      //   try {
+      //     localStorage.setItem('schedulerConfig', JSON.stringify(sc));
+      //     alert('Scheduler configuration saved successfully!');
+      //     this.showConfig = false;
+      //   } catch (error) {
+      //     console.error('[DEBUG] saveSchedulerConfig (LS) failed:', e);
+      //     alert('Failed to save scheduler configuration. Check console.');
+      //   }
+      // },
+
+      exportSchedulerData() {
+        // data validation first
+        if (!this.semester.startDate || !this.semester.endDate) {
+          alert('Please set your semester dates first.');
+          return null;
+        }
+        if (!this.schcedulerConfig.dailyStart || !this.schedulerConfig.dailyEnd) {
+          alert('Please complete the scheduler settings before geenrating a scheduler');
+          return null;
+        }
+        
+        const lessons = this.events.filter(e => e.type === 'lesson');
+        if (lessons.length === 0) {
+          alert('Please add at least one lesson before generating your schedule');
+          return null;
+        }
+
+        // main payload export
+        const payload = {
+          semester: this.semester,
+          schedulerConfig: this.schedulerConfig,
+          modules: lessons,
+          personalEvents: this.events.filter(e => e.type === 'non-lesson')
+        };
+
+        console.log('[DEBUG] Schedule request payload:', payload);
+        return payload;
+      },
+
+      async applyGeneratedSchedule() {
+        if (!schedule || !Array.isArray(schedule.sessions)) {
+          console.error('[DEBUG] Unexpected schedule shape:', schedule);
+          alert('Scheduler returned an unexpected result.');
+          return;
+        }
+
+        await this.clearGeneratedReviews();
+        const reviewEvents = schedule.sessions.map(s => this.mapSessionToEvent(s)); // convert review sessions (to add into cal)
+        
+        await Promise.allSettled(reviewEvents.map(e => this.saveReviewToFirestore(e)));
+
+        // merge all
+        this.events.push(...reviewEvents);
+        this.updateCalendar();
+      },
+
+      mapSessionToEvent(session) {
+        // expected session fields from backend : { moduleName, start, end, interval, status }
+        const start = new Date(session.start);
+        const end = session.end ? new Date(session.end) : null;
+
+        return {
+          title: `${session.moduleName} [${session.interval}d]`,
+          date: this.formatDate(start),
+          startTime: this.formatTime(start),
+          endTime: end ? this.formatTime(end) : this.formatTime(start),
+          type: 'review',
+          courseCode: session.moduleName || '',
+          courseName: '',
+          weightage: 1,
+          repeat: false,
+          generated: true
+        };
+      },
+
+      async saveReviewToFirestore(e) {
+        try {
+          const id = this.docIdFor(e);
+          const ref = doc(db, this.uid, 'schedule', 'reviews', id);
+          await setDoc(ref, e, { merge: true });
+        } catch (error) {
+          console.error('[DEBUG] Failed to save review to Firestore:', error);
+        }
+      },
+
       async performDelete() {
         if (!this.selectedEventElement) return;
 
@@ -507,8 +654,39 @@ function bootApp(semesterFromFirestore, user) {
             this.updateCalendar();
         },      
     // handle Vue error before schedule is generated
-      generateSchedule() {
-        alert("Auto-schedule function not implemented yet.")
+      async generateSchedule() {
+        // alert("Auto-schedule function not implemented yet.")
+
+        const payload = this.exportSchedulerData();
+        if (!payload) return;
+
+        try {
+          console.log('[DEBUG] Sending payload to backend...');
+          const res = await axios.post('/api/generate-schedule', payload);
+          console.log('[DEBUG] Received schedule:', res.data);
+
+          this.applyGeneratedSchedule(res.data);
+          alert('Schedule successfully generated!');
+        } catch (error) {
+          console.error('[DEBUG] Error generating schedule:', error);
+          alert('Failed to generate schedule. Please try again.');
+        }
+      },
+
+      async clearGeneratedReviews() {
+        this.events = this.events.filter(e => e.type !== 'review');
+
+        try {
+          const snap = await getDocs(collection(db, this.uid, 'schedule', 'reviews'));
+          const ops = [];
+          snap.forEach(d => ops.push(deleteDoc(doc(db, this.uid, 'schedule', 'reviews', d.id))));
+          await Promise.allSettled(ops);
+          console.log('[DEBUG] Cleared review docs in Firestore');
+        } catch (error) {
+          console.warn('[DEBUG] Could not clear review docs in Firestore:', error);
+        }
+
+        this.updateCalendar();
       },
 
 
@@ -667,6 +845,7 @@ function bootApp(semesterFromFirestore, user) {
     },
     mounted() {
       this.loadSemester();
+      this.loadSchedulerConfig();
       this.loadEventsFromFirestore();
     }
   }).mount('#app');
