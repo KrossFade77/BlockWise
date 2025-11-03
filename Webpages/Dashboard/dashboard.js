@@ -76,6 +76,7 @@ function bootApp(semesterFromFirestore, user) {
           repeat: false
         },
         events: [],
+        holidays: [],
         schedulerConfig: {
           dailyStart: '10:00',
           dailyEnd: '22:00',
@@ -118,16 +119,51 @@ function bootApp(semesterFromFirestore, user) {
 
             console.log(`[DEBUG] Found ${moduleList.length} unique modules.`);
             return moduleList;
-        }
+        },
+
+        holidayEvents() {
+          console.log("[DEBUG] Re-computing holiday events...");
+          return this.holidays.map(holiday => {
+              return {
+                  title: holiday.name, // e.g., "New Year's Day"
+                  start: holiday.date, // e.g., "2025-01-01"
+                  allDay: true,
+
+                  // We will set the color directly instead of using a class
+                  backgroundColor: '#fdeaea', // A light red/pink
+                  borderColor: '#fdeaea',     // Match the border
+                  textColor: '#721c24'      // A dark red for the text
+              };
+          });
+      }
     },
 
     methods: {
-      loadSemester() {
-        this.semester = {
-          startDate: semesterFromFirestore.startDate,
-          endDate: semesterFromFirestore.endDate
-        };
-      },
+      async loadSemester() {
+        if (!this.uid) {
+            console.log("No UID, cannot load semester.");
+            return;
+        }
+        
+        const docRef = doc(db, this.uid, "semester");
+        const docSnap = await getDoc(docRef); 
+
+        if (docSnap.exists()) {
+            this.semester = docSnap.data();
+            console.log("[DEBUG] Semester loaded:", this.semester);
+            
+            // Now that we have the semester, load events
+            await this.loadEventsFromFirestore();
+            
+            // And now, load the holidays
+            await this.loadPublicHolidays();
+            
+        } else {
+            console.error("No semester document found! Redirecting...");
+            alert("Please set up your semester dates first.");
+            window.location.href = 'semester.html';
+        }
+    },
 
       toggleSidebar() {
        this.showSidebar = !this.showSidebar;
@@ -621,6 +657,38 @@ function bootApp(semesterFromFirestore, user) {
         }
       },
 
+      async loadPublicHolidays() {
+     		// 1. Check if we have a country code
+     		if (!this.semester || !this.semester.countryCode) {
+     			console.log("[DEBUG] No country code set. Skipping holiday load.");
+     			return;
+     		}
+
+     		// 2. Get the current year
+     		const year = new Date().getFullYear();
+     		const countryCode = this.semester.countryCode;
+
+     		console.log(`[DEBUG] Fetching holidays for ${countryCode}, ${year}...`);
+
+     		try {
+     			// 3. Call the Nager API
+     			const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${countryCode}`);
+     			if (!response.ok) {
+     				throw new Error('Network response was not ok');
+     			}
+     			const holidays = await response.json();
+
+     			// 4. Log the result!
+     			this.holidays = holidays;
+   			  console.log(`[DEBUG] Stored ${this.holidays.length} holidays.`);
+
+          this.updateCalendar();
+
+     		} catch (error) {
+     			console.error("[DEBUG] Failed to fetch public holidays:", error);
+     		}
+     	},
+
       updateCalendar() {
           console.log(`[DEBUG] updateCalendar() called. Filter: ${this.activeModuleFilter}`);
           if (!this.calendar) {
@@ -663,6 +731,12 @@ function bootApp(semesterFromFirestore, user) {
                   className: event.type
               });
           });
+
+          this.holidayEvents.forEach(holiday => {
+            this.calendar.addEvent(holiday);
+          });
+
+          console.log(`[DEBUG] Rendering ${filteredEvents.length} events + ${this.holidayEvents.length} holidays.`);
       },
     },
     mounted() {

@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Semester Setup</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <link rel="stylesheet" href="./style.css">
     <style>
@@ -43,6 +42,13 @@
                     <div class="mb-3">
                         <label for="endDate" class="form-label">Semester End Date</label>
                         <input type="date" class="form-control" id="endDate" v-model="semester.endDate" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="country" class="form-label">Country (for Holidays):</label>
+                        <select class="form-select" id="country" v-model="countryCode" required>
+                            <option value="" disabled>Please select a country</option>
+ 							<option v-for="country in availableCountries" :key="country.countryCode" :value="country.countryCode">{{ country.name }}</option>
+                        </select>
                     </div>
                     <div class="error" :class="{ show: error }">{{ error }}</div>
                     <button type="submit" class="btn btn-primary" :disabled="saving">{{ saving ? 'Saving...' : 'Save Semester' }}</button>
@@ -88,11 +94,28 @@
                         startDate: '2025-08-01',
                         endDate: '2025-11-30'
                     },
+                    countryCode: '',
+                    availableCountries: [],
                     error: '',
                     saving: false
                 };
             },
             methods: {
+
+                async loadAvailableCountries() {
+                    try {
+                        const response = await fetch('https://date.nager.at/api/v3/AvailableCountries');
+                        if (!response.ok) {
+                            throw new Error('Failed to load countries');
+                        }
+                        this.availableCountries = await response.json();
+                        console.log(`[Semester] Loaded ${this.availableCountries.length} countries.`);
+                    } catch (e) {
+                        console.error("[Semester] Load countries error:", e);
+                        this.error = "Failed to load country list. Please refresh.";
+                    }
+                 },
+
                 async saveSemester() {
                     if (!this.semester.startDate || !this.semester.endDate) {
                         this.error = 'Please fill in both dates.';
@@ -108,6 +131,7 @@
                         await setDoc(ref, {
                         startDate: this.semester.startDate,
                         endDate: this.semester.endDate,
+                        countryCode: this.countryCode,
                         updatedAt: Date.now()
                         }, { merge: true });
 
@@ -130,6 +154,7 @@
                     }
 
                     this.uid = user.uid;
+                    this.loadAvailableCountries();
                     const ref = doc(db, this.uid, "semester");
                     try {
                         const snap = await getDoc(ref);
@@ -137,6 +162,7 @@
                             const data = snap.data();
                             this.semester.startDate = data.startDate || this.semester.startDate;
                             this.semester.endDate = data.endDate || this.semester.endDate;
+                            this.countryCode = data.countryCode || '';
                             console.log("[Semester] Loaded from Firestore:", data);
                         } else {
                             console.log("[Semester] No existing doc; using defaults.");
