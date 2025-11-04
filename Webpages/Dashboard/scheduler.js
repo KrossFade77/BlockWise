@@ -20,12 +20,6 @@ function addMinutes(dt, mins) {
   return d;
 }
 
-function addDays(dt, days) {
-  const d = new Date(dt);
-  d.setDate(d.getDate() + days);
-  return d;
-}
-
 function dayISO(d) {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
 }
@@ -50,18 +44,24 @@ function toISO(dt) {
   const mm = pad(dt.getMinutes());
   return `${y}-${m}-${d}T${hh}:${mm}`;
 }
-
-function overlaps(aStart, aEnd, bStart, bEnd) {
-  return aStart < bEnd && bStart < aEnd;
-}
-
 function minISO(a, b) { return (a < b) ? a : b; }
 function maxISO(a, b) { return (a > b) ? a : b; }
 
-/**
- * Build a map { dateISO: { start: Date, end: Date } } for every day in
- * [horizonStartISO, horizonEndISO], clamped to the semester.
- */
+
+function startOfISOWeek(dateISO) {
+  const d = new Date(`${dateISO}T00:00:00`);
+  const day = (d.getDay() + 6) % 7; // Mon=0 .. Sun=6
+  d.setDate(d.getDate() - day);
+  return dayISO(d);
+}
+function endOfISOWeek(dateISO) {
+  const start = new Date(`${startOfISOWeek(dateISO)}T00:00:00`);
+  start.setDate(start.getDate() + 6);
+  return dayISO(start);
+}
+
+
+
 function buildDailyWindows(semester, cfg, horizonStartISO, horizonEndISO) {
   const map = {};
   const startISO = maxISO(horizonStartISO, semester.startDate);
@@ -80,23 +80,20 @@ function buildDailyWindows(semester, cfg, horizonStartISO, horizonEndISO) {
   return map;
 }
 
-/**
- * Convert events (lessons + personal) into busy intervals for a given day.
- * Expects events with { date, time/startTime, endTime }.
- */
+
 function toBusyForDay(dateISO, events) {
   const out = [];
   for (const ev of events || []) {
     if (ev.date !== dateISO) continue;
     const startHHMM = ev.startTime || ev.time;
     const endHHMM   = ev.endTime;
-    if (!startHHMM || !endHHMM) continue; // skip malformed
+    if (!startHHMM || !endHHMM) continue; 
     const s = toDateTime(dateISO, startHHMM);
     const e = toDateTime(dateISO, endHHMM);
-    if (e <= s) continue; // ignore zero/negative lengths
+    if (e <= s) continue; 
     out.push({ start: s, end: e });
   }
-  // Merge overlaps (normalize)
+  
   out.sort((a, b) => a.start - b.start);
   const merged = [];
   for (const slot of out) {
@@ -111,15 +108,11 @@ function toBusyForDay(dateISO, events) {
   return merged;
 }
 
-/**
- * Given a day window and existing busy slots for that day, try to place a
- * new interval of length `mins` starting as early as possible.
- */
+
 function placeOnDay(dayWindow, busy, mins) {
   const durationMs = mins * 60 * 1000;
 
   let cursor = new Date(dayWindow.start);
-  // walk through gaps between busy blocks
   for (let i = 0; i <= busy.length; i++) {
     const gapEnd = (i < busy.length) ? busy[i].start : dayWindow.end;
     if (cursor.getTime() + durationMs <= gapEnd.getTime()) {
@@ -127,7 +120,6 @@ function placeOnDay(dayWindow, busy, mins) {
       const end   = addMinutes(start, mins);
       return { start, end };
     }
-    // move cursor to end of this busy block
     if (i < busy.length) {
       cursor = new Date(Math.max(cursor, busy[i].end));
     }
@@ -135,9 +127,7 @@ function placeOnDay(dayWindow, busy, mins) {
   return null;
 }
 
-/**
- * Try to place a session on `targetDayISO` or the next available day within the horizon.
- */
+
 function findSlotOnOrAfter(targetDayISO, mins, dailyWindows, busyMap) {
   const allDays = Object.keys(dailyWindows).sort(); // ISO sorts chronologically
   const startIdx = Math.max(0, allDays.indexOf(targetDayISO));
@@ -152,28 +142,56 @@ function findSlotOnOrAfter(targetDayISO, mins, dailyWindows, busyMap) {
   return null;
 }
 
-// -------------------------------
-// Review expansion & schedule
+
+
+// Scheduling review blocks
 // -------------------------------
 
 const DEFAULT_INTERVALS = [1, 3, 7];
+const DURATION_BY_WEIGHT = {
+  5: { 1: 120, 3: 75,  7: 45 },
+  4: { 1: 90,  3: 60,  7: 45 },
+  3: { 1: 60,  3: 45,  7: 30 },
+  2: { 1: 45,  3: 30,  7: 30 },
+  1: { 1: 30,  3: 30,  7: 30 }
+};
 
 /**
  * Choose lesson anchors in [(today - maxInterval) .. horizonEnd] so that
  * a lesson “yesterday” still spawns +1 today, etc.
  */
-function expandReviews(modules, horizonStartISO, horizonEndISO) {
-  const maxInterval = Math.max(...DEFAULT_INTERVALS); // 7
-  const anchorStartISO = addDaysISO(horizonStartISO, -maxInterval);
+function durationFor(weight, interval, floorMinutes = 15, capMinutes = 240) {
+    const w = Math.min(5, Math.max(1, Number(weight || 1)));
+    const i = Number(interval);
+    const table = DURATION_BY_WEIGHT[w] || DURATION_BY_WEIGHT[i];
+    const mins = table[i] ?? table[7] ?? 30; // fallback just in case
+    // Clamp for safety:
+    return Math.max(floorMinutes, Math.min(capMinutes, mins));
+}
 
-  const inWindow = (dateISO) => (dateISO >= anchorStartISO && dateISO <= horizonEndISO);
+function expandReviews(modules, horizonStartISO, horizonEndISO) {
+  const weekStartISO = startOfISOWeek(horizonStartISO);
+  const weekEndISO   = endOfISOWeek(horizonStartISO);
+
+  // pick only this week's lessons
+  const inThisWeek = (dateISO) => (dateISO >= weekStartISO && dateISO <= weekEndISO);
 
   const lessons = (modules || []).filter(
-    e => e.type === 'lesson' && e.date && inWindow(e.date)
+    e => e.type === 'lesson' && e.date && inThisWeek(e.date)
   );
 
-  const out = [];
+  // one anchor per module (course)
+  const byModule = new Map();
   for (const e of lessons) {
+    const key = e.courseCode || e.courseName || e.title || 'Module';
+    // if a module had >1 lesson in a week, keep the earliest in that week
+    if (!byModule.has(key) || e.date < byModule.get(key).date) {
+      byModule.set(key, e);
+    }
+  }
+
+  const out = [];
+  for (const e of byModule.values()) {
     out.push({
       moduleName: e.courseCode || e.courseName || e.title || 'Module',
       anchorDate: e.date,
@@ -185,8 +203,7 @@ function expandReviews(modules, horizonStartISO, horizonEndISO) {
 }
 
 /**
- * Core entry: build the spaced-repetition schedule.
- * Input payload shape comes directly from your frontend:
+ * Input payload comes directly from frontend
  * {
  *   semester: { startDate: 'YYYY-MM-DD', endDate: 'YYYY-MM-DD' },
  *   schedulerConfig: { dailyStart, dailyEnd, minStudyDuration, weeksToGenerate },
@@ -204,28 +221,27 @@ function buildSchedule(payload) {
     throw new Error('Missing schedulerConfig.dailyStart/dailyEnd');
   }
 
-  const minutes = clamp(Number(cfg.minStudyDuration ?? 30), 15, 240);
-  const weeks   = Math.max(1, Number(cfg.weeksToGenerate || 4));
-
+  const weeks = Math.max(1, Number(cfg.weeksToGenerate || 4));
   const horizonStartISO = todayISO();
-  const horizonEndISO   = addDaysISO(horizonStartISO, weeks * 7);
+  const horizonEndISO = addDaysISO(horizonStartISO, weeks * 7);
 
-  // 1) Day windows for [today .. today+weeks], clamped by semester
+  // Day windows for [today .. today+weeks], clamped by semester
   const dailyWindows = buildDailyWindows(semester, cfg, horizonStartISO, horizonEndISO);
 
-  // 2) Busy map from lessons + personal events (reviews are not included)
+  // Busy map from lessons + personal events (reviews are not included)
   const busyMap = {};
   for (const day of Object.keys(dailyWindows)) {
     busyMap[day] = toBusyForDay(day, [...(modules || []), ...(personalEvents || [])]);
   }
 
-  // 3) Expand review targets by lessons in [(today-7)..horizonEnd]
+  // Expand review targets by lessons in [(today-7)..horizonEnd]
   const targets = expandReviews(modules || [], horizonStartISO, horizonEndISO);
 
-  // 4) Greedy placement: heavier modules first, then earliest anchors
+  // Greedy placement: heavier modules first, then earliest anchors
   targets.sort((a, b) => (b.weight - a.weight) || a.anchorDate.localeCompare(b.anchorDate));
 
   const sessions = [];
+  
   for (const t of targets) {
     for (const interval of t.intervals) {
       const targetDay = addDaysISO(t.anchorDate, interval);
@@ -233,13 +249,14 @@ function buildSchedule(payload) {
       // Never schedule in the past
       if (targetDay < horizonStartISO) continue;
 
-      const slot = findSlotOnOrAfter(targetDay, minutes, dailyWindows, busyMap);
+      const mins = durationFor(t.weight, interval, Number(cfg.minStudyDuration ?? 15));
+
+      const slot = findSlotOnOrAfter(targetDay, mins, dailyWindows, busyMap);
       if (!slot) continue; // couldn’t fit within horizon
 
       // Reserve the time to avoid overlaps with later placements
       const reserved = busyMap[slot.dateISO] || (busyMap[slot.dateISO] = []);
       reserved.push({ start: slot.start, end: slot.end });
-      // keep busy list normalized (optional but keeps placement stable)
       reserved.sort((a, b) => a.start - b.start);
 
       sessions.push({
