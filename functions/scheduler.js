@@ -272,4 +272,4 @@ function buildSchedule(payload) {
   return { sessions };
 }
 
-export { buildSchedule };
+module.exports = { buildSchedule };

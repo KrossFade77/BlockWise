@@ -29,7 +29,13 @@
     "rewrites": [
       {"source": "api/generate", "function": "generate"},
       {"source": "api/parse", "function": "parse"},
-      {"source": "/api/generate-schedule", "function": "renderSchedule"}
+      {
+        "source": "/api/generate-schedule",
+        "function": {
+          "functionId": "renderSchedule",
+          "region": "asia-southeast1"
+        }
+      }
     ]
   }
 }

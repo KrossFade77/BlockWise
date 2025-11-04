@@ -12,9 +12,8 @@ const {onRequest} = require("firebase-functions/https");
 const {defineSecret} = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
-const {buildSchedule} = require("../Webpages/Dashboard/scheduler.js")
+const {buildSchedule} = require("./scheduler")
 
-import { buildSchedule } from './scheduler.js';
 
 // For cost control, you can set the maximum number of containers that can be
 // running at the same time. This helps mitigate the impact of unexpected
@@ -185,7 +184,7 @@ exports.renderSchedule = onRequest(
         return;
       }
 
-      const schedule = await buildSchedule(payload); // -> { sessions: [...] }
+      const schedule = await buildSchedule(payload);
       res.status(200).json(schedule);
     } catch (err) {
       logger.error('[generate] error', err);
