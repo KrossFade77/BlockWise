@@ -27,8 +27,9 @@
       "**/node_modules/**"
     ],
     "rewrites": [
-      {"source": "api/generate", "function": "generate"},
-      {"source": "api/parse", "function": "parse"},
+      {"source": "/api/generate", "function": "generate"},
+      {"source": "/api/parse", "function": "parse"},
+      {"source": "/api/upload", "function": "upload"},
       {
         "source": "/api/generate-schedule",
         "function": {
