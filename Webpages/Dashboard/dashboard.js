@@ -558,6 +558,8 @@ function bootApp(semesterFromFirestore, user) {
 
       async applyGeneratedSchedule(schedule) {
         if (!schedule || !Array.isArray(schedule.sessions)) {
+          console.log(typeof(schedule));
+          console.log(typeof(schedule.sessions));
           console.error('[DEBUG] Unexpected schedule shape:', schedule);
           alert('Scheduler returned an unexpected result.');
           return;
