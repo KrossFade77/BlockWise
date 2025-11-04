@@ -680,7 +680,6 @@ function bootApp(semesterFromFirestore, user) {
         },      
     // handle Vue error before schedule is generated
       async generateSchedule() {
-        // alert("Auto-schedule function not implemented yet.")
 
         const payload = this.exportSchedulerData();
         if (!payload) {
@@ -702,7 +701,6 @@ function bootApp(semesterFromFirestore, user) {
           await this.applyGeneratedSchedule(data);
           console.log('[DEBUG] Received schedule:', res.data);
 
-          await this.applyGeneratedSchedule(res.data);
           alert('Schedule successfully generated!');
         } catch (error) {
           console.error('[DEBUG] Error generating schedule:', error);
