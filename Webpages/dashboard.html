@@ -109,22 +109,22 @@
 </head>
 <body>
     <div id="app" class="dashboard-container my-5">
-        <h1 class="mb-4">Event Calendar</h1>
-
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <div class="d-flex align-items-center gap-3">
-                <button class="btn  hamburger-btn mb-3" @click="toggleSidebar" title="Toggle Modules">
+            <h1>Event Calendar</h1>
+            <button class="btn btn-danger btn-sm logout-button" @click="logout">Logout</button>
+        </div>
+
+        
+            <div class="d-grid d-md-flex align-items-center gap-3">
+                <button class="btn hamburger-btn" @click="toggleSidebar" title="Toggle Modules">
                     <i class="fas fa-bars"></i>
                 </button>
-                <button class="btn btn-primary mb-3" @click="showEventForm">Add Event</button>
-                <button class="btn btn-success mb-3" @click="showConfig = !showConfig">Scheduler Settings</button>
-                <button class="btn btn-warning mb-3" @click="generateSchedule">Generate Schedule</button>
-            </div>
-
-            <a href="revisedMCQ.html" class="btn btn-secondary mb-3">Quiz Generation</a>
-            <button class="btn btn-danger btn-sm mb-3" @click="logout">Logout</button>
-
-        </div> 
+                <button class="btn btn-primary" @click="showEventForm">Add Event</button>
+                <button class="btn btn-success" @click="showConfig = !showConfig">Scheduler Settings</button>
+                <button class="btn btn-warning" @click="generateSchedule">Generate Schedule</button>
+                <a href="revisedMCQ.html" class="btn btn-secondary">Quiz Generation</a>
+            </div>     
+        
         
         <div class="row">
             <div :class="['sidebar-mobile', { 'show': showSidebar }]" v-if="showSidebar">
