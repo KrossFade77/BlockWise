@@ -12,6 +12,11 @@ const {onRequest} = require("firebase-functions/https");
 const {defineSecret} = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
+const {buildSchedule} = require("./scheduler");
+const Busboy = require('busboy');
+const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
+
 
 // For cost control, you can set the maximum number of containers that can be
 // running at the same time. This helps mitigate the impact of unexpected
@@ -160,3 +165,138 @@ exports.parse = onRequest(
      }
    }
 );
+
+exports.renderSchedule = onRequest(
+   { region: "asia-southeast1" },
+   async (req, res) => {
+    try {
+      if (req.method !== 'POST') {
+        res.status(405).json({ error: 'Use POST' });
+        return;
+      }
+
+      const payload = req.body || {};
+      logger.info('[generate] payload keys', { keys: Object.keys(payload || {}) });
+
+      if (!payload.semester?.startDate || !payload.semester?.endDate) {
+        res.status(400).json({ error: 'Missing semester.startDate/endDate' });
+        return;
+      }
+      if (!payload.schedulerConfig?.dailyStart || !payload.schedulerConfig?.dailyEnd) {
+        res.status(400).json({ error: 'Missing schedulerConfig.dailyStart/dailyEnd' });
+        return;
+      }
+
+      const schedule = await buildSchedule(payload);
+      res.status(200).json(schedule);
+    } catch (err) {
+      logger.error('[generate] error', err);
+      res.status(500).json({ error: 'Internal error' });
+    }
+});
+
+/**
+ * POST /api/upload
+ * Handles file uploads (.txt, .pdf, .docx)
+ * Returns: { text: string } or { error: string }
+ */
+exports.upload = onRequest(
+  { region: 'asia-southeast1', timeoutSeconds: 120, memory: '512MiB' },
+  async (req, res) => {
+    if (req.method !== 'POST') {
+      res.status(405).json({ error: 'Use POST' });
+      return;
+    }
+
+    const ctype = (req.headers['content-type'] || '').toLowerCase();
+    if (!ctype.startsWith('multipart/form-data')) {
+      res.status(400).json({ error: 'Content-Type must be multipart/form-data' });
+      return;
+    }
+
+    try {
+      const { fileBuffer, filename } = await parseMultipartFromRaw(req);
+
+      if (!filename) {
+        res.status(400).json({ error: 'No file uploaded' });
+        return;
+      }
+      if (!fileBuffer || fileBuffer.length === 0) {
+        console.error('[upload] Empty file buffer for', filename);
+        res.status(400).json({ error: 'Empty file' });
+        return;
+      }
+
+      const lower = filename.toLowerCase();
+      let text = '';
+
+      if (lower.endsWith('.txt')) {
+        text = fileBuffer.toString('utf-8');
+      } else if (lower.endsWith('.pdf')) {
+        // pdf-parse v2 ESM named export
+        const pdfMod = await import('pdf-parse');     // ESM module
+        const PDFParse = pdfMod.PDFParse;
+        if (!PDFParse) {
+          throw new Error('pdf-parse v2 detected but PDFParse class not found');
+        }
+      
+        // Use the buffer you already built
+        const parser = new PDFParse({ data: fileBuffer }); // or { buffer: fileBuffer }
+        const result = await parser.getText();             // { text, meta, pages, ... }
+        await parser.destroy();
+      
+        text = result?.text || '';
+      } else if (lower.endsWith('.docx')) {
+        const mammothMod = await import('mammoth');
+        const mammothLib = mammothMod.default || mammothMod; // <-- handle default
+        const { value } = await mammothLib.extractRawText({ buffer: fileBuffer });
+        text = value || '';
+      } else {
+        res.status(400).json({ error: 'Only .txt, .pdf, .docx supported' });
+        return;
+      }
+
+      res.status(200).json({ text });
+    } catch (err) {
+      console.error('[upload] Failed to process file:', err);
+      res.status(500).json({ error: 'Failed to process file' });
+    }
+  }
+);
+
+/**
+ * Parse multipart/form-data using req.rawBody (CF v2 friendly).
+ * Returns { fileBuffer, filename }.
+ */
+function parseMultipartFromRaw(req) {
+  return new Promise((resolve, reject) => {
+    const bb = Busboy({ headers: req.headers });
+
+    let fileBuffer = Buffer.alloc(0);
+    let filename = '';
+
+    bb.on('file', (fieldname, file, info) => {
+      filename = info?.filename || '';
+      const chunks = [];
+      file.on('data', (d) => chunks.push(d));
+      file.on('end', () => {
+        fileBuffer = Buffer.concat(chunks);
+      });
+    });
+
+    // (optional) capture non-file fields if you ever need them:
+    // bb.on('field', (name, val) => { ... });
+
+    bb.on('error', (e) => reject(e));
+    bb.on('finish', () => resolve({ fileBuffer, filename }));
+    bb.on('close', () => { /* some environments emit close; finish is the main one */ });
+
+    // ✅ Feed Busboy with the buffered body instead of piping the req stream
+    if (req.rawBody && Buffer.isBuffer(req.rawBody)) {
+      bb.end(req.rawBody);
+    } else {
+      // Fallback: emulator or older envs
+      req.pipe(bb);
+    }
+  });
+}
