@@ -56,6 +56,11 @@
   <p>Paste your notes below. The AI will automatically create 10 MCQs (with answers) based on them.</p>
 
   <textarea id="notes" rows="12" cols="70"></textarea><br>
+  <div style="margin: 8px 0;">
+    <label for="fileInput">Upload notes (.txt / .pdf / .docx): </label>
+    <input id="fileInput" type="file" accept=".txt,.pdf,.docx">
+    <span id="uploadStatus" style="margin-left: 8px; color:#555;"></span>
+  </div>  
   <button onclick="sendPrompt()">Generate MCQs</button>
 
   <h3>Generated Questions:</h3>
@@ -95,6 +100,49 @@ Enter your notes below. The AI will generate 10 multiple-choice questions (with 
         textarea.setSelectionRange(fixedText.length, fixedText.length);
       }
     });
+    // 'safer' file upload listener (safer + status text + append after fixedText)
+    (function initUpload() {
+      const fileInput = document.getElementById("fileInput");
+      const statusEl  = document.getElementById("uploadStatus");
+      if (!fileInput || !statusEl) return;
+
+      fileInput.addEventListener("change", async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        try {
+          setText(statusEl, "Uploading & extracting...");
+          const extracted = await uploadFile(file);
+
+          const current = textarea.value.startsWith(fixedText)
+            ? textarea.value.slice(fixedText.length)
+            : textarea.value;
+
+          const combined = (current ? (current + "\n\n") : "") + extracted;
+          textarea.value = fixedText + combined;
+
+          // caret to end of editable area
+          textarea.focus();
+          const pos = fixedText.length + combined.length;
+          textarea.setSelectionRange(pos, pos);
+
+          setText(statusEl, `Loaded: ${file.name}`);
+          statusEl.style.color = "#555";
+        } catch (err) {
+          setText(statusEl, `Error: ${err.message}`);
+          statusEl.style.color = "red";
+          console.error(err);
+        }
+      });
+    })();
+
+    function clearNode(node) {
+      while (node.firstChild) node.removeChild(node.firstChild);
+    }
+    function setText(node, text) {
+      node.textContent = "";
+      node.appendChild(document.createTextNode(text));
+    }
 
     async function sendPrompt() {
       const notes = textarea.value.slice(fixedText.length).trim();
@@ -201,7 +249,10 @@ Enter your notes below. The AI will generate 10 multiple-choice questions (with 
         });
 
         qDiv.dataset.correctLetter = correctLetter || ""; // fallback empty if parser couldn't match
-        
+        const result = document.createElement("div");
+        result.className = "result";
+        result.id = `result${i + 1}`;
+        qDiv.appendChild(result);
         quizContainer.appendChild(qDiv);
       });
     }
@@ -229,6 +280,21 @@ Enter your notes below. The AI will generate 10 multiple-choice questions (with 
         }
       });
     }
+    async function uploadFile(file) {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      return data.text;
+    }
+
+
   </script>
 </body>
 </html>
