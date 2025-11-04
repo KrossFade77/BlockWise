@@ -28,7 +28,8 @@
     ],
     "rewrites": [
       {"source": "api/generate", "function": "generate"},
-      {"source": "api/parse", "function": "parse"}
+      {"source": "api/parse", "function": "parse"},
+      {"source": "/api/generate-schedule", "function": "renderSchedule"}
     ]
   }
 }
