@@ -558,8 +558,8 @@ function bootApp(semesterFromFirestore, user) {
 
       async applyGeneratedSchedule(schedule) {
         if (!schedule || !Array.isArray(schedule.sessions)) {
-          console.log(typeof(schedule));
-          console.log(typeof(schedule.sessions));
+          console.error(typeof(schedule));
+          console.error(typeof(schedule.sessions));
           console.error('[DEBUG] Unexpected schedule shape:', schedule);
           alert('Scheduler returned an unexpected result.');
           return;
@@ -684,10 +684,7 @@ function bootApp(semesterFromFirestore, user) {
       async generateSchedule() {
 
         const payload = this.exportSchedulerData();
-        if (!payload) {
-          console.log('No payload received.');
-          return;
-        }
+        if (!payload) return;
 
         try {
           console.log('[DEBUG] Sending payload to backend...');
@@ -700,8 +697,8 @@ function bootApp(semesterFromFirestore, user) {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
           const data = await res.json();
+          console.log('[DEBUG] Received schedule:', data);
           await this.applyGeneratedSchedule(data);
-          console.log('[DEBUG] Received schedule:', res.data);
 
           alert('Schedule successfully generated!');
         } catch (error) {
