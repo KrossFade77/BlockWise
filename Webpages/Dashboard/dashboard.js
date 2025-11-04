@@ -89,7 +89,7 @@ function bootApp(semesterFromFirestore, user) {
         originalEventForEdit: null,
         editMode: false,
         semester: { startDate: '', endDate: '' },
-        showSidebar: true,
+        showSidebar: false,
         activeModuleFilter: null,
       };
     },

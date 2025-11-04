@@ -44,6 +44,66 @@
  			border: none;
  		}
 
+        /* 1. Style the hamburger button */
+        .hamburger-btn {
+            background-color: #f8f9fa; /* Light gray background */
+            border: 1px solid #dee2e6; /* Subtle border */
+            border-radius: 8px;
+            color: #495057;
+        }
+
+        .sidebar-mobile {
+            padding: 0px;
+        }
+
+
+        /* 2. Style the "pop-out" sidebar for mobile */
+        /* On mobile (Bootstrap's "md" breakpoint is < 768px) */
+        @media (max-width: 767px) {
+            .sidebar-mobile {
+                position: fixed; /* Make it float on top */
+                top: 0;
+                left: 0;
+                width: 300px; /* Give it a fixed width */
+                height: 100vh; /* Full screen height */
+                background-color: white;
+                z-index: 1050; /* Higher than the main content */
+                padding: 20px;
+                box-shadow: 0 0 20px rgba(0,0,0,0.2);
+                /* Hide it by default, off-screen */
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-out;
+
+                background-color: #212529; /* Bootstrap's "dark" color */
+                color: #f8f9fa;
+            }
+
+            .sidebar-mobile h4 {
+                color: white;
+             }
+
+            .sidebar-mobile.show {
+                /* Show it by moving it on-screen */
+                transform: translateX(0);
+            }
+
+            /* 3. Add a dark overlay for the background */
+            .sidebar-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+                z-index: 1040; /* Just below the sidebar */
+                display: none; /* Hide by default */
+            }
+
+            .sidebar-overlay.show {
+                display: block; /* Show when sidebar is open */
+            }
+        }
+
 
     </style>
 </head>
@@ -53,8 +113,8 @@
 
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="d-flex align-items-center gap-3">
-                <button class="btn btn-outline-secondary mb-3" @click="toggleSidebar" title="Toggle Modules">
-                <i class="fas fa-bars"></i>
+                <button class="btn  hamburger-btn mb-3" @click="toggleSidebar" title="Toggle Modules">
+                    <i class="fas fa-bars"></i>
                 </button>
                 <button class="btn btn-primary mb-3" @click="showEventForm">Add Event</button>
                 <button class="btn btn-success mb-3" @click="showConfig = !showConfig">Scheduler Settings</button>
@@ -67,16 +127,16 @@
         </div> 
         
         <div class="row">
-            <div class="col-md-3" v-if="showSidebar">
+            <div :class="['sidebar-mobile', { 'show': showSidebar }]" v-if="showSidebar">
                 <h4>My Modules</h4>
                 <div class="list-group" id="module-list">
                     <a v-if="activeModuleFilter" href="#" @click.prevent="setFilter(null)" 
                     class="list-group-item list-group-item-action list-group-item-danger d-flex justify-content-between align-items-center">
-                    <span>Clear Filter ({{ activeModuleFilter }})</span>
-                    <i class="fas fa-times"></i>
+                        <span>Clear Filter ({{ activeModuleFilter }})</span>
+                        <i class="fas fa-times"></i>
                     </a>
                     <div v-if="uniqueModules.length === 0" class="list-group-item">
-                     <small class="text-muted">No modules added yet.</small>
+                        <small class="text-muted">No modules added yet.</small>
                     </div>
 
                     <a v-for="mod in uniqueModules" :key="mod.code" href="#" @click.prevent="setFilter(mod.code)" 
@@ -85,20 +145,12 @@
                             <h6 class="mb-1">{{ mod.code }}</h6>
                             <small>Weight: {{ mod.weight }}/5</small>
                         </div>
-                            <p class="mb-1 small">{{ mod.name }}</p>
+                        <p class="mb-1 small">{{ mod.name }}</p>
                     </a>
-                 </div>
+                </div>
             </div>
+            <div :class="['sidebar-overlay', { 'show': showSidebar }]" @click="toggleSidebar"></div>
 
-            <div :class="showSidebar ? 'col-md-9' : 'col-12'">
-            <!-- <button
-                class="btn btn-warning"
-                @click="generateSchedule"
-                :disabled="!semester.startDate || !semester.endDate"
-                >
-                Generate Schedule
-            </button> -->
-            <!-- Global Scheduler Config -->
             <div v-if="showConfig" class="card p-3 mb-4"> 
                 <h5>Scheduler Settings</h5>
                 <div class="row">
@@ -122,146 +174,146 @@
                         <label class="form-label">Weeks to generate</label>
                         <input type="number" min="1" max="16" class="form-control" v-model.number="schedulerConfig.weeksToGenerate" placeholder="e.g., 4">
                     </div>
+                </div>
+                <button class="btn btn-primary" @click="saveSchedulerConfig">Save Config</button> 
             </div>
-            <button class="btn btn-primary" @click="saveSchedulerConfig">Save Config</button> 
-        </div>
 
 
 
-        <!-- <button class="btn btn-primary mb-3" @click="showEventForm">Add Event</button> -->
-        <div class="event-form" v-if="showForm">
-            <form @submit.prevent="addEvent">
-                <div class="mb-3">
-                    <label for="eventTitle" class="form-label">Event Title</label>
-                    <input type="text" class="form-control" id="eventTitle" v-model="event.title" placeholder="Enter event title" required>
-                </div>
-                <div class="mb-3">
-                    <label for="eventDate" class="form-label">Date</label>
-                    <input type="date" class="form-control" id="eventDate" v-model="event.date" required>
-                </div>
-                <div class="mb-3">
-                    <label for="eventTime" class="form-label">Start Time</label>
-                    <input type="time" class="form-control" id="eventTime" v-model="event.startTime" required>
-                </div>
-                <div class="mb-3">
-                    <label for="eventEndTime" class="form-label">End Time</label>
-                    <input type="time" class="form-control" id="eventEndTime" v-model="event.endTime" required>
-                </div>
-                <div class="mb-3">
-                    <label for="eventType" class="form-label">Type</label>
-                    <select class="form-control" id="eventType" v-model="event.type" required>
-                        <option disabled value=" ">--Select Type --</option>
-                        <option value="lesson">Lesson</option>
-                        <option value="non-lesson">Non-Lesson</option>
-                    </select>
-                </div>
-
-                <!-- Repeat Weekly Checkbox + Day Picker -->
-                <div class="mb-3 form-check">
-                    <input type="checkbox" class="form-check-input" id="repeatWeekly" v-model="event.repeat">
-                    <label class="form-check-label" for="repeatWeekly">Repeat weekly</label>
-                </div>
-
-                <div v-if="event.type === 'lesson'">
+            <!-- <button class="btn btn-primary mb-3" @click="showEventForm">Add Event</button> -->
+            <div class="event-form" v-if="showForm">
+                <form @submit.prevent="addEvent">
                     <div class="mb-3">
-                        <label class="form-label">Course Code</label>
-                        <input type="text" class="form-control" v-model="event.courseCode" required> 
+                        <label for="eventTitle" class="form-label">Event Title</label>
+                        <input type="text" class="form-control" id="eventTitle" v-model="event.title" placeholder="Enter event title" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Course Name</label>
-                        <input type="text" class="form-control" v-model="event.courseName" required> 
+                        <label for="eventDate" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="eventDate" v-model="event.date" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Module Weight (1–5)</label>
-                        <input type="number" class="form-control" v-model.number="event.weightage" min="1" max="5" required> 
+                        <label for="eventTime" class="form-label">Start Time</label>
+                        <input type="time" class="form-control" id="eventTime" v-model="event.startTime" required>
                     </div>
-                </div>
+                    <div class="mb-3">
+                        <label for="eventEndTime" class="form-label">End Time</label>
+                        <input type="time" class="form-control" id="eventEndTime" v-model="event.endTime" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="eventType" class="form-label">Type</label>
+                        <select class="form-control" id="eventType" v-model="event.type" required>
+                            <option disabled value=" ">--Select Type --</option>
+                            <option value="lesson">Lesson</option>
+                            <option value="non-lesson">Non-Lesson</option>
+                        </select>
+                    </div>
 
-                <button type="submit" class="btn btn-primary">Save Event</button>
-                <button type="button" class="btn btn-secondary ms-2" @click="showForm = false">Cancel</button>
-            </form>
-        </div>
-        <div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="eventModalLabel">{{ editMode ? 'Edit Event' : 'Event Details' }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" @click="editMode = false" aria-label="Close"></button>
+                    <!-- Repeat Weekly Checkbox + Day Picker -->
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="repeatWeekly" v-model="event.repeat">
+                        <label class="form-check-label" for="repeatWeekly">Repeat weekly</label>
                     </div>
-                    <div class="modal-body">
-                        <div v-if="!editMode">
-                            <p><strong>Title:</strong> {{ selectedEvent.title }}</p>
-                            <p><strong>Date:</strong> {{ selectedEvent.date }}</p>
-                            <p><strong>Start Time:</strong> {{ selectedEvent.startTime }}</p>
-                            <p><strong>End Time:</strong> {{ selectedEvent.endTime || 'N/A' }}</p>
-                            <p><strong>Type:</strong> {{ selectedEvent.type }}</p>
+
+                    <div v-if="event.type === 'lesson'">
+                        <div class="mb-3">
+                            <label class="form-label">Course Code</label>
+                            <input type="text" class="form-control" v-model="event.courseCode" required> 
                         </div>
-                        <form v-else @submit.prevent="saveEditedEvent">
-                            <div class="mb-3">
-                                <label for="editTitle" class="form-label">Event Title</label>
-                                <input type="text" class="form-control" id="editTitle" v-model="selectedEvent.title" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="editDate" class="form-label">Date</label>
-                                <input type="date" class="form-control" id="editDate" v-model="selectedEvent.date" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="editStartTime" class="form-label">Start Time</label>
-                                <input type="time" class="form-control" id="editStartTime" v-model="selectedEvent.startTime" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="editEndTime" class="form-label">End Time</label>
-                                <input type="time" class="form-control" id="editEndTime" v-model="selectedEvent.endTime" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="editType" class="form-label">Type</label>
-                                <select class="form-control" id="editType" v-model="selectedEvent.type" required>
-                                    <option value="lesson">Lesson</option>
-                                    <option value="non-lesson">Non-Lesson</option>
-                                </select>
-                            </div>
-                        </form>
+                        <div class="mb-3">
+                            <label class="form-label">Course Name</label>
+                            <input type="text" class="form-control" v-model="event.courseName" required> 
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Module Weight (1–5)</label>
+                            <input type="number" class="form-control" v-model.number="event.weightage" min="1" max="5" required> 
+                        </div>
                     </div>
-                    <div class="modal-footer">
-                        <button v-if="!editMode" type="button" class="btn btn-primary" @click="editMode = true">Edit</button>
-                        <button v-if="editMode" type="button" class="btn btn-primary" @click="saveEditedEvent">Save</button>
-                        <button type="button" class="btn btn-danger" @click="deleteEvent">Delete</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="editMode = false">Close</button>
+
+                    <button type="submit" class="btn btn-primary">Save Event</button>
+                    <button type="button" class="btn btn-secondary ms-2" @click="showForm = false">Cancel</button>
+                </form>
+            </div>
+            <div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="eventModalLabel">{{ editMode ? 'Edit Event' : 'Event Details' }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" @click="editMode = false" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div v-if="!editMode">
+                                <p><strong>Title:</strong> {{ selectedEvent.title }}</p>
+                                <p><strong>Date:</strong> {{ selectedEvent.date }}</p>
+                                <p><strong>Start Time:</strong> {{ selectedEvent.startTime }}</p>
+                                <p><strong>End Time:</strong> {{ selectedEvent.endTime || 'N/A' }}</p>
+                                <p><strong>Type:</strong> {{ selectedEvent.type }}</p>
+                            </div>
+                            <form v-else @submit.prevent="saveEditedEvent">
+                                <div class="mb-3">
+                                    <label for="editTitle" class="form-label">Event Title</label>
+                                    <input type="text" class="form-control" id="editTitle" v-model="selectedEvent.title" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editDate" class="form-label">Date</label>
+                                    <input type="date" class="form-control" id="editDate" v-model="selectedEvent.date" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editStartTime" class="form-label">Start Time</label>
+                                    <input type="time" class="form-control" id="editStartTime" v-model="selectedEvent.startTime" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editEndTime" class="form-label">End Time</label>
+                                    <input type="time" class="form-control" id="editEndTime" v-model="selectedEvent.endTime" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editType" class="form-label">Type</label>
+                                    <select class="form-control" id="editType" v-model="selectedEvent.type" required>
+                                        <option value="lesson">Lesson</option>
+                                        <option value="non-lesson">Non-Lesson</option>
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button v-if="!editMode" type="button" class="btn btn-primary" @click="editMode = true">Edit</button>
+                            <button v-if="editMode" type="button" class="btn btn-primary" @click="saveEditedEvent">Save</button>
+                            <button type="button" class="btn btn-danger" @click="deleteEvent">Delete</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="editMode = false">Close</button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="modal fade" id="deleteRecurringModal" tabindex="-1" data-bs-backdrop="static">
-        <div class="modal-dialog modal-sm">
-            <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Delete Repeating Event</h5>
+            <div class="modal fade" id="deleteRecurringModal" tabindex="-1" data-bs-backdrop="static">
+                <div class="modal-dialog modal-sm">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Delete Repeating Event</h5>
+                        </div>
+                        <div class="modal-body text-center">
+                            <button class="btn btn-primary w-100 mb-2" @click="confirmDelete('this')">
+                            Only This Event
+                            </button>
+                            <button class="btn btn-secondary w-100 mb-2" @click="confirmDelete('future')">
+                            All Future Events
+                            </button>
+                            <button class="btn btn-outline-danger w-100 mb-2" @click="confirmDelete('all')">
+                            All
+                            </button>
+                            <button class="btn btn-light w-100" data-bs-dismiss="modal">
+                            Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="modal-body text-center">
-                <button class="btn btn-primary w-100 mb-2" @click="confirmDelete('this')">
-                Only This Event
-                </button>
-                <button class="btn btn-secondary w-100 mb-2" @click="confirmDelete('future')">
-                All Future Events
-                </button>
-                <button class="btn btn-outline-danger w-100 mb-2" @click="confirmDelete('all')">
-                All
-                </button>
-                <button class="btn btn-light w-100" data-bs-dismiss="modal">
-                Cancel
-                </button>
-            </div>
-            </div>
-        </div>
-        </div>
 
-        <div v-if="events.length === 0" class="alert alert-info mt-3">
-            No events scheduled yet.
-        </div>
-        <div id="calendar"></div>
+            <div v-if="events.length === 0" class="alert alert-info mt-3">
+                No events scheduled yet.
+            </div>
+            <div id="calendar"></div>
 
-    </div>
+        </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/vue@3.2.47/dist/vue.global.prod.js"></script>
     <script src="https://unpkg.com/fullcalendar@6.1.15/index.global.min.js"></script>
