@@ -141,11 +141,24 @@ createApp({
                 this.loading = false;
             }
         },
+
+        hidePreloader() {
+            const preloader = document.getElementById('preloader');
+            if (preloader) {
+                // Fade it out
+                preloader.style.opacity = '0';
+                setTimeout(() => {
+                    // Hide it completely after the fade
+                    preloader.style.display = 'none';
+                }, 500); // 500ms matches the CSS transition
+            }
+        },
     },
     mounted() {
         onAuthStateChanged(auth, (user) => {
-            if (user && window.location.pathname.includes('index.html')) {
-                // Already logged in → redirect
+            if (user && (window.location.pathname.includes('index.html') || window.location.pathname === '/')) {
+                // User is logged in, just redirect.
+                // The preloader will stay visible until the new page loads.
                 getDoc(doc(db, user.uid, "semester")).then(snap => {
                     if (snap.exists()) {
                         window.location.href = './dashboard.html';
@@ -153,6 +166,10 @@ createApp({
                         window.location.href = './semester.html';
                     }
                 });
+            } else {
+                // No user is logged in, so hide the preloader
+                // and show the login form.
+                this.hidePreloader();
             }
         });
     }

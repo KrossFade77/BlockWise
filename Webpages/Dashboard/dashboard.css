@@ -1,64 +1,856 @@
-/* Project/Dashboard/dashboard.css */
+/* === 1. DESIGN SYSTEM (TOKENS) === */
+:root {
+    /* -- Light Mode (Default) -- */
+    --color-surface: #FFFFFF;
+    --color-surface-panel: #FFFFFF; /* For floating panels */
+    --color-text-primary: #202124;
+    --color-text-secondary: #5F6368;
+    --color-outline: #AEAEAE; /* Fixes Google's P0 non-text contrast fail */
+    --color-holiday-bg: #fdeaea;
+    --color-holiday-text: #721c24;
+    --color-sidebar-bg: #FFFFFF;
+    --color-sidebar-text: #212529;
+    --color-btn-primary-bg: #4285F4;
+    --color-btn-primary-text: #FFFFFF;
+    --color-btn-primary-hover: #3367D6;
+    --color-accent-gold: #D4AF37;
+    --color-event-purple-bg: #EDE7F6;    /* Light Lavender */
+    --color-event-purple-border: #7E57C2; /* Medium Purple */
+    --color-event-purple-text: #4527A0;   /* Dark Purple Text */
+
+    --color-event-neutral-bg: #424242;    /* Dark Gray */
+    --color-event-neutral-border: #BDBDBD; /* Medium Gray */
+    --color-event-neutral-text: #F1F3F4;  /* Light Gray */
+
+    --color-event-blue-bg: #E8F0FE;      /* Very Light Blue */
+    --color-event-blue-border: #4285F4;  /* Premium Royal Blue */
+    --color-event-blue-text: #1967D2;    /* Dark Readable Blue */
+
+    
+}
+
+[data-theme="dark"] {
+    /* -- Dark Mode -- */
+    --color-surface: #202124;
+    --color-surface-panel: #2A2B2D; /* A slightly lighter dark for panels */
+    --color-text-primary: #E1E3E1;
+    --color-text-secondary: #9AA0A6;
+    --color-outline: #757575; /* Fixes Google's P0 dark non-text contrast fail */
+    --color-holiday-bg: #5C2B2B;  /* A desaturated, dark-mode-safe red */
+    --color-holiday-text: #F2B8B5;/* A light, accessible red text */
+    --color-sidebar-bg: #212529;
+    --color-sidebar-text: #f8f9fa;
+    --color-btn-primary-bg: #A8C7FA; /* A lighter, accessible blue */
+    --color-btn-primary-text: #003062; /* Dark text on the light button */
+    --color-btn-primary-hover: #BCCFF7;
+    --color-accent-gold: #FDD835;
+    --color-event-purple-bg: #311B92;    /* Dark Purple */
+    --color-event-purple-border: #7E57C2; /* Medium Purple */
+    --color-event-purple-text: #EDE7F6;   /* Light Lavender Text */
+
+    --color-event-neutral-bg: #F1F3F4;    /* Light Gray */
+    --color-event-neutral-border: #BDBDBD; /* Medium Gray */
+    --color-event-neutral-text: #424242;  /* Dark Gray */
+
+    --color-event-blue-bg: #28354A;      /* Dark Blue/Grey */
+    --color-event-blue-border: #A8C7FA;  /* Light Accessible Blue */
+    --color-event-blue-text: #A8C7FA;    /* Light Accessible Blue */
+}
+
+[data-theme="dark"] body {
+    /* This creates a "streak" by putting a lighter stripe in the middle */
+    background: linear-gradient(
+        -45deg, 
+        #121212 30%, 
+        #3a3a3a 50%,  /* This is the "shiny streak" */
+        #121212 70%
+    );
+    background-size: 300% 300%; /* Makes the gradient large */
+    animation: change 8s ease-in-out infinite;
+    color: var(--color-text-primary);
+    background-attachment: fixed; /* Keeps gradient from scrolling */
+}
+
+
+/* === 2. GLOBAL THEME APPLICATION === */
+body {
+    /* This is the light mode "gold streak" gradient */
+    background: linear-gradient(
+        -45deg, 
+        #F1F3F4 40%,  /* The soft grey base */
+        #FAD02E 50%,  /* A SHINY bright gold center */
+        #F1F3F4 60%   /* The soft grey base */
+    );
+    background-size: 400% 400%; /* Make it bigger to move */
+    animation: change 10s ease-in-out infinite;
+    color: var(--color-text-primary);
+    background-attachment: fixed; /* Keeps gradient from scrolling */
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Theme-aware h1, h4 */
+h1, h4 {
+    color: var(--color-text-primary);
+}
+
+/* === 3. LAYOUT COMPONENTS === */
+
+
+.top-navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    background-color: var(--color-surface-panel, #2A2B2D); /* Uses dark panel color */
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--color-outline);
+    margin-bottom: 2rem; /* Add space below the navbar */
+}
+
+.nav-left, .nav-center, .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.nav-brand {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+}
+
+.nav-center a {
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+    padding: 0.5rem 0.25rem;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.nav-center a:hover {
+    color: var(--color-accent-gold);
+    border-bottom-color: var(--color-accent-gold);
+}
+
+/* Simple, clean icon buttons for the navbar */
+.nav-btn {
+    background-color: transparent;
+    color: var(--color-accent-gold);
+    font-size: 1.25rem;
+    padding: 0.25rem 0.5rem;
+}
+.nav-btn:hover {
+    color: var(--color-text-primary);
+    background-color: rgba(128, 128, 128, 0.1);
+}
+
+.hero-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--color-surface-panel);
+    border: 1px solid var(--color-outline);
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.hero-text h2 {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.hero-text p {
+    font-size: 1.1rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.hero-quote {
+    text-align: right;
+    font-style: italic;
+    max-width: 40%; /* Don't let it get too wide */
+}
+
+.quote-text {
+    font-size: 1.1rem;
+    color: var(--color-text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.quote-author {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+/* --- Hamburger Button --- */
+.hamburger-btn {
+    background-color: #f8f9fa; /* Light gray background */
+    border: 1px solid #dee2e6; /* Subtle border */
+    border-radius: 8px;
+    color: #495057;
+}
+
+.sidebar-mobile {
+  padding: 0px;
+}
+
+/* === 3c. SIDEBAR MENU STYLES (NEW) === */
+
+/* This styles the sidebar card on DESKTOP */
+@media (min-width: 768px) {
+    .sidebar-mobile {
+        background-color: var(--color-surface-panel);
+        border: 1px solid var(--color-outline);
+        border-radius: 8px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        padding: 1.5rem;
+        margin-bottom: 2rem; 
+        width: 100%; 
+    }
+}
+
+/* --- Styles for content (both mobile & desktop) --- */
+
+/* Style the titles ("Navigation", "My Modules") */
+.sidebar-mobile h4 {
+    color: var(--color-text-primary);
+    font-weight: 600;
+    border-bottom: 1px solid var(--color-outline);
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+/* This overrides the old mobile-only style */
+[data-theme="dark"] .sidebar-mobile h4 {
+     color: var(--color-text-primary);
+}
+
+/* This removes the default Bootstrap white background */
+.sidebar-mobile .list-group {
+    background-color: transparent;
+}
+
+/* This styles ALL links ("Add Event", Module links, etc.) */
+.sidebar-mobile .list-group-item {
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    border: none;
+    border-bottom: 1px solid var(--color-outline);
+    padding: 0.85rem 0.25rem;
+    transition: color 0.2s ease, background-color 0.2s ease;
+    cursor: pointer;
+}
+
+/* Remove the border from the last item in any list */
+.sidebar-mobile .list-group-item:last-child {
+    border-bottom: none;
+}
+
+/* This is our premium hover effect */
+.sidebar-mobile .list-group-item:hover {
+    color: var(--color-accent-gold);
+    background-color: var(--color-surface); 
+}
+
+/* This styles the "Clear Filter" button */
+.sidebar-mobile .list-group-item.list-group-item-danger {
+    color: #f2b8b5; /* Light red */
+    font-weight: 500;
+}
+.sidebar-mobile .list-group-item.list-group-item-danger:hover {
+    color: var(--color-accent-gold);
+    background-color: #5C2B2B; /* Dark red bg */
+}
+
+/* This styles the "No modules added yet" placeholder */
+.sidebar-mobile #module-list .list-group-item:first-child:last-child {
+     background-color: var(--color-surface);
+     border: 1px dashed var(--color-outline);
+     border-radius: 8px;
+     color: var(--color-text-secondary);
+     text-align: center;
+     font-style: italic;
+     margin-top: 1rem;
+}
+
+/* This styles the active module link */
+#app .sidebar-mobile .list-group-item.active {
+    background-color: var(--color-btn-primary-bg);
+    color: var(--color-btn-primary-text);
+    border-radius: 8px;
+    border: none;
+}
+
+/* === 3d. PREMIUM MODULE ITEM STYLES === */
+
+/* This targets ONLY the module items, not the nav links */
+.sidebar-mobile #module-list .list-group-item {
+    background-color: var(--color-surface); /* Make it an "inner card" */
+    border: 1px solid var(--color-outline);
+    border-radius: 8px;
+    margin-bottom: 0.75rem; /* Space between items */
+    padding: 1rem 1.25rem;
+    position: relative; /* Allows us to position the 'weight' text */
+}
+
+/* This fixes the "spread out" text */
+.sidebar-mobile #module-list .list-group-item .d-flex {
+    display: block; /* Stop it from being flex */
+    width: auto;
+}
+
+/* Style the module code (e.g., IS216) */
+.sidebar-mobile #module-list .list-group-item h6 {
+    color: var(--color-text-secondary);
+    font-weight: 600;
+    font-size: 0.85rem; /* Make it smaller, like a sub-header */
+    margin-bottom: 0.25rem;
+}
+
+/* Style the module name (e.g., Web App Dev) */
+.sidebar-mobile #module-list .list-group-item p {
+    color: var(--color-text-primary);
+    font-weight: 500;
+    font-size: 1.1rem; /* Make this the "main" text */
+    margin-bottom: 0;
+    padding-right: 4rem; /* Make room for the weight */
+}
+
+/* Style the weight text and move it */
+.sidebar-mobile #module-list .list-group-item small {
+    color: var(--color-accent-gold);
+    font-weight: 600;
+    font-size: 0.9rem;
+    /* Move it to the top-right corner */
+    position: absolute;
+    top: 1rem;
+    right: 1.25rem;
+}
+
+/* Style the active module card */
+.sidebar-mobile #module-list .list-group-item.active {
+    background-color: var(--color-btn-primary-bg);
+    color: var(--color-btn-primary-text);
+    border-color: var(--color-btn-primary-bg);
+}
+
+/* Fix text colors for active state */
+.sidebar-mobile #module-list .list-group-item.active h6,
+.sidebar-mobile #module-list .list-group-item.active p,
+.sidebar-mobile #module-list .list-group-item.active small {
+    color: var(--color-btn-primary-text);
+}
+
+/* --- Mobile Sidebar (Using 767.98px to be precise) --- */
+@media (max-width: 767.98px) {
+    .sidebar-mobile {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 300px;
+        height: 100vh;
+        background-color: var(--color-surface-panel);
+        color: var(--color-sidebar-text); /* THEMED */
+        z-index: 1050;
+        padding: 1.5rem; /* Replaced your 20px and 0px */
+        box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        transform: translateX(-100%);
+        transition: transform 0.3s ease-out;
+    }
+
+    .sidebar-mobile.show {
+        transform: translateX(0);
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 1040;
+        display: none;
+    }
+    
+    .sidebar-overlay.show {
+        display: block;
+    }
+}
+
+/* === 4. PREMIUM BUTTON STYLES === */
+#app .btn-primary {
+    background-color: var(--color-btn-primary-bg) !important;
+    color: var(--color-btn-primary-text) !important;
+    border: none; /* Premium buttons are often borderless */
+    font-weight: 500;
+    border-radius: 8px; /* Softer, more modern corners */
+    padding: 0.5rem 1rem;
+    transition: background-color 0.2s ease-out;
+}
+
+/* This makes the hover work with our theme */
+#app .btn-primary:hover {
+    background-color: var(--color-btn-primary-hover);
+    color: var(--color-btn-primary-text);
+}
+
+/* === 4c. PREMIUM MODAL STYLES === */
+.premium-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Dark overlay */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050; /* On top of everything */
+}
+
+.premium-modal-content {
+    background-color: var(--color-surface-panel);
+    color: var(--color-text-primary);
+    padding: 2rem;
+    border-radius: 12px;
+    border: 1px solid var(--color-outline);
+    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 500px; /* A good default width */
+    max-height: 90vh; /* Don't let it be taller than 90% of the screen */
+    overflow-y: auto; /* Add a scrollbar if the content inside is too tall */
+}
+
+.premium-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.premium-modal-header h4 {
+    margin: 0;
+    color: var(--color-text-primary);
+}
+
+.premium-modal-header .btn-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+}
+
+/* Style form elements inside the modal */
+.premium-modal-content .form-label {
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+.premium-modal-content .form-control {
+    background-color: transparent; /* No background */
+    color: var(--color-text-primary);
+    border: none; /* No border */
+    border-bottom: 1px solid var(--color-outline); /* Bottom border only */
+    border-radius: 0; /* Sharp corners */
+    padding-left: 0; /* Align text to the left */
+    padding-right: 0;
+}
+
+/* Themed Dropdowns (select) */
+.premium-modal-content .form-select {
+    background-color: var(--color-surface); /* Use a dark background */
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-outline); /* Full border */
+    border-radius: 8px; /* Keep it rounded */
+}
+
+/* This fixes the white dropdown options in dark mode */
+.premium-modal-content .form-select option {
+    background: var(--color-surface-panel);
+    color: var(--color-text-primary);
+}
+
+/* Focus for inputs (gold line) */
+.premium-modal-content .form-control:focus {
+    background-color: transparent;
+    color: var(--color-text-primary);
+    border-bottom-color: var(--color-accent-gold); 
+    box-shadow: none;
+}
+
+/* Focus for dropdowns (gold border) */
+.premium-modal-content .form-select:focus {
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    border-color: var(--color-accent-gold); /* Gold border */
+    box-shadow: none;
+}
+
+/* === 4d. BOOTSTRAP MODAL OVERRIDE === */
+
+/* This themes the main modal "card" */
+.modal-content {
+    background-color: var(--color-surface-panel);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-outline);
+}
+
+/* This themes the top and bottom borders */
+.modal-header,
+.modal-footer {
+    border-bottom-color: var(--color-outline);
+    border-top-color: var(--color-outline);
+}
+
+/* This themes the "Secondary" (Close/Cancel) buttons */
+    .modal-footer .btn-secondary,
+    .modal-footer .btn-light {
+        background-color: var(--color-surface);
+        color: var(--color-text-secondary);
+        border: 1px solid var(--color-outline);
+        font-weight: 500;
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+    .modal-footer .btn-secondary:hover,
+    .modal-footer .btn-light:hover {
+        background-color: var(--color-outline);
+        color: var(--color-text-primary);
+    }
+
+    /* This themes the "Danger" (Delete) buttons */
+    .modal-footer .btn-danger {
+        background-color: #D32F2F; /* A strong red */
+        color: #FFFFFF;
+        border: none;
+        font-weight: 500;
+        border-radius: 8px;
+        transition: background-color 0.2s ease;
+    }
+    .modal-footer .btn-danger:hover {
+        background-color: #E53935; /* Brighter red on hover */
+    }
+    
+    /* This themes the "Outline Danger" button in the delete modal */
+    .modal-footer .btn-outline-danger {
+        background-color: transparent;
+        color: #F48B8B; /* Light red text */
+        border: 1px solid #F48B8B;
+        font-weight: 500;
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+    .modal-footer .btn-outline-danger:hover {
+        background-color: #5C2B2B; /* Dark red bg */
+        color: #FFFFFF;
+    }
+
+    /* This themes the text inside the delete modal */
+    #deleteRecurringModal .modal-body {
+        color: var(--color-text-primary);
+    }
+
+    /* Style form elements inside the modal */
+    .modal-body .form-label {
+        color: var(--color-text-secondary);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Minimalist text/date/time inputs */
+    .modal-body .form-control {
+        background-color: transparent; /* No background */
+        color: var(--color-text-primary);
+        border: none; /* No border */
+        border-bottom: 1px solid var(--color-outline); /* Bottom border only */
+        border-radius: 0; /* Sharp corners */
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    /* Themed Dropdowns (select) */
+    .modal-body .form-select {
+        background-color: var(--color-surface); /* Use a dark background */
+        color: var(--color-text-primary);
+        border: 1px solid var(--color-outline); /* Full border */
+        border-radius: 8px; /* Keep it rounded */
+    }
+    
+    .modal-body .form-select option {
+        background: var(--color-surface-panel);
+        color: var(--color-text-primary);
+    }
+
+    /* Focus for inputs (gold line) */
+    .modal-body .form-control:focus {
+        background-color: transparent;
+        color: var(--color-text-primary);
+        border-bottom-color: var(--color-accent-gold); 
+        box-shadow: none;
+    }
+
+    /* Focus for dropdowns (gold border) */
+    .modal-body .form-select:focus {
+        background-color: var(--color-surface);
+        color: var(--color-text-primary);
+        border-color: var(--color-accent-gold); /* Gold border */
+        box-shadow: none;
+    }
+    
+    /* Fixes the date/time picker icons in dark mode */
+    [data-theme="dark"] .modal-body .form-control {
+        color-scheme: dark;
+    }
+
+
+/* === 5. THEMED PANELS (Calendar & Module List) === */
+
+/* Style the calendar as a "floating" panel */
+#calendar {
+    background-color: var(--color-surface-panel); /* THEMED */
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 5px 45px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--color-outline);
+}
+
+#calendar .fc {
+    /* Make the calendar itself transparent to fit our card */
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+}
+
+
+
+/* === 5. CALENDAR & EVENT STYLES === */
+
+/* --- Event Form (from old CSS) --- */
 .event-form {
     max-width: 400px;
     margin: 0 auto;
     padding: 20px;
-    background: #f8f9fa; /* Bootstrap light gray */
+    background: #f8f9fa;
     border-radius: 5px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-/* Style lesson events (blue) */
-.fc-event.lesson {
-    background-color: #3788d8;
-    border-color: #2b6cb0;
-    color: white;
+/* --- FullCalendar Grid (new P0 fixes) --- */
+.fc {
+    /* Fixes gridlines */
+    --fc-border-color: var(--color-outline); 
+    /* Fixes date text */
+    --fc-day-text-color: var(--color-text-secondary);
+    /* Fixes "more..." link */
+    --fc-more-link-color: var(--color-text-primary);
 }
 
-/* Style non-lesson events (green, striped) */
-.fc-event.non-lesson {
-  background: repeating-linear-gradient(
-    -45deg,
-    #2e7d32,
-    #2e7d32 5px,
-    #388e3c 5px,
-    #388e3c 10px
-  );
-  border-color: #1b5e20;
-  color: white;
+.fc .fc-daygrid-day-number {
+    color: var(--color-text-secondary);
 }
 
-/* Style study sessions (Purple, dashed) */
-.fc-event.study {
-  background-color: #ede7f6; /* Light Lavender */
-  border: 2px dashed #7e57c2; /* Medium Purple */
+.fc .fc-col-header-cell-cushion {
+    color: var(--color-text-primary);
+    text-decoration: none;
 }
 
-/* Set the text color on the title and time elements */
-.fc-event.study .fc-event-title,
-.fc-event.study .fc-event-time {
-  color: #4527a0; /* Dark Purple Text */
-}
-
-/* Ensure event text is readable */
+/* --- Event Base Styles (from old CSS) --- */
 .fc-event-title {
     font-size: 14px;
     padding: 2px 4px;
 }
 
-.fc-event.review-session {
-    background-color: #fff3cd;
-    border-color: #ffc107;
-    color: #856404;
+/* * FIX: Target the side-bar time text: "8:00", "9:00"
+*/
+.fc .fc-timegrid-slot-label-cushion,
+.fc .fc-timegrid-axis-label { /* "all-day" text */
+    color: var(--color-text-secondary);
 }
 
-/* Icons in title */
+.fc .fc-day-today {
+    /* We use a semi-transparent overlay that works in both modes */
+    background-color: rgba(128, 128, 128, 0.1);
+}
+[data-theme="dark"] .fc .fc-day-today {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* --- Event Type: Lesson (THEMED) --- */
+.fc-event.lesson {
+  background-color: var(--color-event-blue-bg);
+  border: 1px solid var(--color-event-blue-border);
+}
+.fc-event.lesson .fc-event-title,
+.fc-event.lesson .fc-event-time {
+  color: var(--color-event-blue-text);
+}
+
+/* --- Event Type: Non-Lesson (THEMED) --- */
+.fc-event.non-lesson {
+  background-color: var(--color-event-neutral-bg);
+  border: 1px solid var(--color-event-neutral-border);
+  color: var(--color-event-neutral-text);
+}
+/* We need to override the text color for the title/time */
+.fc-event.non-lesson .fc-event-title,
+.fc-event.non-lesson .fc-event-time {
+  color: var(--color-event-neutral-text);
+}
+
+/* --- Event Type: Study (THEMED) --- */
+.fc-event.study {
+  background-color: var(--color-event-purple-bg);
+  border: 2px dashed var(--color-event-purple-border);
+}
+.fc-event.study .fc-event-title,
+.fc-event.study .fc-event-time {
+  color: var(--color-event-purple-text);
+}
+
+/* --- Event Type: Review Session (THEMED) --- */
+.fc-event.review-session {
+  background-color: var(--color-event-neutral-bg);
+  border: 1px solid var(--color-event-neutral-border);
+  color: var(--color-event-neutral-text);
+}
+.fc-event.review-session .fc-event-title,
+.fc-event.review-session .fc-event-time {
+  color: var(--color-event-neutral-text);
+}
+
+/* --- Event Icons (from old CSS) --- */
 .fc-event-title::before {
     font-family: "Font Awesome 5 Free";
     font-weight: 900;
     margin-right: 5px;
 }
-.lesson .fc-event-title::before { content: "\f02d"; }     /* book */
-.non-lesson .fc-event-title::before { content: "\f005"; } /* star */
-.review-session .fc-event-title::before { content: "\f0f3"; } /* bell */
-.study .fc-event-title::before { content: "\f080"; }       /* chart/stats icon */
+
+/* === 5a. CALENDAR HEADER BUTTONS === */
+
+/* Style for all calendar buttons (month, week, day, arrows) */
+#calendar .fc .fc-button {
+    background-color: var(--color-surface);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-outline); /* No !important */
+    font-weight: 500;
+    text-transform: capitalize; 
+    transition: background-color 0.2s ease, color 0.2s ease;
+    padding: 0.5rem 1rem;
+    box-shadow: none; /* No !important */
+}
+
+/* Premium hover/active state */
+#calendar .fc .fc-button:hover,
+#calendar .fc .fc-button:active,
+#calendar .fc .fc-button.fc-button-active {
+    background-color: var(--color-accent-gold); /* No !important */
+    color: #000000; /* No !important */
+    border-color: var(--color-accent-gold); /* No !important */
+}
+
+/* Fix for the button group container */
+#calendar .fc .fc-button-group {
+    border-radius: 8px;
+    overflow: hidden; 
+}
+
+/* === 5b. THEMED ALERT BOX === */
+
+/* Overrides the default "alert-info" */
+.alert-info {
+    background-color: var(--color-surface);
+    color: var(--color-text-secondary);
+    border: 1px dashed var(--color-outline);
+    border-radius: 8px;
+    font-style: italic;
+    text-align: center;
+    box-shadow: none;
+}
+
+/* === 7. PREMIUM SCROLLBAR === */
+
+/* This applies only when in dark mode */
+[data-theme="dark"]::-webkit-scrollbar {
+    width: 10px;
+}
+
+/* This is the scrollbar "track" */
+[data-theme="dark"]::-webkit-scrollbar-track {
+    background: var(--color-surface); /* Dark background */
+}
+
+/* This is the movable "thumb" */
+[data-theme="dark"]::-webkit-scrollbar-thumb {
+    background: var(--color-outline); /* Darker gray */
+    border-radius: 10px;
+}
+
+[data-theme="dark"]::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-secondary); /* Lighter gray on hover */
+}
+
+/* === 8. PRELOADER === */
+
+/* This hides the app until Vue is ready */
+[v-cloak] {
+    display: none;
+}
+
+/* The preloader "page" */
+#preloader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    /* Uses your theme variables to work in both modes! */
+    background-color: #121212;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* This will be used to fade it out */
+    transition: opacity 0.5s ease;
+}
+
+/* WITH THIS: */
+.loader-logo {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    /* This will make it gently "breathe" */
+    animation: pulse-gold 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-gold {
+    0%, 100% {
+        color: var(--color-text-primary);
+        opacity: 0.8;
+    }
+    50% {
+        color: var(--color-accent-gold);
+        opacity: 1;
+    }
+}
+
+.lesson .fc-event-title::before { content: "\f02d"; }
+.non-lesson .fc-event-title::before { content: "\f005"; }
+.review-session .fc-event-title::before { content: "\f0f3"; }
+.study .fc-event-title::before { content: "\f080"; }
+
+@keyframes change {
+    0% { background-position: 0 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0 50%; }
+}
+
+[data-theme="dark"] .premium-modal-content .form-control {
+    color-scheme: dark;
+}

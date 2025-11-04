@@ -1,6 +1,20 @@
 /* Import Poppins font */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400&display=swap');
 
+:root {
+    --color-surface: #1A1A1A;
+    --color-surface-panel: #2A2B2D;
+    --color-text-primary: #f1f1f1;
+    --color-text-secondary: #a8a8a8;
+    --color-outline: #4a4a4a;
+    --color-accent-gold: #FDD835;
+
+    /* Premium Button (Royal Blue) */
+    --color-btn-primary-bg: #4285F4;
+    --color-btn-primary-text: #ffffff;
+    --color-btn-primary-hover: #5a95f5;
+}
+
 /* Basic Properties */
 * {
     margin: 0;
@@ -14,8 +28,10 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-    background-size: 400% 400%;
+    background: linear-gradient(-45deg, #121212 30%, #3a3a3a 50%, #121212 70%);
+    background-size: 300% 300%;
+    background-attachment: fixed;
+    color: var(--color-text-primary);
     animation: change 10s ease-in-out infinite;
 }
 
@@ -42,7 +58,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--color-surface);
     box-shadow: 0 5px 45px rgba(0, 0, 0, 0.15);
     border-radius: 5px;
 }
@@ -63,6 +79,21 @@ body {
     margin-bottom: 10px;
 }
 
+/* Style for the overlay buttons */
+.bluebg .box button {
+    background-color: transparent;
+    border: 2px solid var(--color-text-primary);
+    color: var(--color-text-primary);
+    font-weight: 500;
+    border-radius: 8px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.bluebg .box button:hover {
+    background-color: var(--color-text-primary);
+    color: var(--color-surface-panel);
+}
+
 /* Slider */
 .formBx {
     position: absolute;
@@ -70,7 +101,8 @@ body {
     left: 0;
     width: 52%;
     height: 100%;
-    background: white;
+    background: var(--color-surface-panel);
+    border: 1px solid var(--color-outline);
     z-index: 1000;
     display: flex;
     justify-content: center;
@@ -95,19 +127,15 @@ body {
 
 .formBx .form h3 {
     font-size: 1.5rem;
-    color: #333;
+    color: var(--color-text-primary);
     margin-bottom: 20px;
     font-weight: 400;
 }
 
 .formBx .form i {
     font-size: 4rem;
-    color: #23a6d5;
+    color: var(--color-accent-gold);
     margin-bottom: 10px;
-}
-
-.formBx .signupForm i {
-    color: #e73c7e;
 }
 
 .formBx .signinForm {
@@ -127,7 +155,7 @@ body {
 }
 
 .formBx .form .forgot {
-    color: #333;
+    color: var(--color-text-secondary);
     font-size: 14px;
     text-decoration: none;
     display: block; /* Ensure below button */
@@ -145,13 +173,13 @@ body {
     width: 90%;
     max-width: 400px;
     height: auto;
-    margin: 20px auto;
+    margin: 5px auto;
   }
 
   .bluebg {
     position: relative;
     top: 0;
-    height: 200px;
+    height: auto;
     width: 100%;
     flex-direction: column;
     background: transparent;
@@ -163,24 +191,41 @@ body {
 
   .bluebg .box {
     width: 100%;
-    height: 100px;
-    background: #23a6d5;
+    height: auto; 
+    background: var(--color-surface); 
+    border: 1px solid var(--color-outline); 
     border-radius: 8px;
+    padding: 0.5rem; 
     margin-bottom: 0;
   }
 
   .bluebg .box.signup {
-    background: #e73c7e;
+    background: var(--color-surface);
+    border: 1px solid var(--color-outline);
+    margin-top: 10px;
   }
 
   .bluebg .box h2 {
+    color: var(--color-text-primary);
     font-size: 1.1em;
     margin-bottom: 8px;
   }
 
   .bluebg .box button {
-    font-size: 1em;
-    padding: 8px 16px;
+    /* Use our premium ghost button style */
+    background-color: transparent;
+    border: 2px solid var(--color-text-primary);
+    color: var(--color-text-primary);
+    font-weight: 500;
+    border-radius: 8px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    padding: 8px 16px; /* Keep mobile padding */
+    font-size: 1em; /* Keep mobile font size */
+  }
+
+  .bluebg .box button:hover {
+      background-color: var(--color-text-primary);
+      color: var(--color-surface-panel);
   }
 
   .formBx {
@@ -188,8 +233,8 @@ body {
     top: 0;
     left: 0;
     width: 100%;
-    height: 450px;
-    background: white;
+    height: 550px;
+    background: var(--color-surface-panel);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
     overflow: hidden;
     transition: none;
@@ -207,7 +252,7 @@ body {
     top: 0;
     left: 0;
     width: 100%;
-    height: 450px;
+    height: 550px;
     padding: 30px 20px;
     transition: transform 0.5s ease-in-out;
   }
@@ -217,11 +262,11 @@ body {
   }
 
   .formBx.active .signinForm {
-    transform: translateY(-450px);
+    transform: translateY(-550px);
   }
 
   .formBx .signupForm {
-    transform: translateY(450px);
+    transform: translateY(550px);
   }
 
   .formBx.active .signupForm {
@@ -236,4 +281,237 @@ body {
   .formBx .form .btn {
     margin-top: 10px;
   }
+}
+
+.formBx .form .form-control {
+    background-color: transparent;
+    color: var(--color-text-primary);
+    border: none;
+    border-bottom: 1px solid var(--color-outline);
+    border-radius: 0;
+    padding-left: 0;
+}
+
+.formBx .form .form-control:focus {
+    background-color: transparent;
+    color: var(--color-text-primary);
+    border-bottom-color: var(--color-accent-gold);
+    box-shadow: none;
+}
+
+/* Fixes the placeholder text color */
+.formBx .form .form-control::placeholder {
+    color: var(--color-text-secondary);
+    opacity: 0.7;
+}
+
+/* Fixes the white-on-white autofill text */
+.formBx .form .form-control:-webkit-autofill,
+.formBx .form .form-control:-webkit-autofill:hover, 
+.formBx .form .form-control:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--color-text-primary);
+    -webkit-box-shadow: 0 0 0px 1000px var(--color-surface-panel) inset;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Tell browser to use its dark mode UI for pickers */
+.formBx .form .form-control {
+    color-scheme: dark;
+}
+
+/* Premium action button */
+.formBx .form .btn-primary {
+    background-color: var(--color-btn-primary-bg);
+    color: var(--color-btn-primary-text);
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.6rem;
+    width: 100%;
+    transition: background-color 0.2s ease;
+}
+
+.formBx .form .btn-primary:hover {
+    background-color: var(--color-btn-primary-hover);
+}
+
+.formBx .form .btn-primary:disabled {
+    background-color: var(--color-outline);
+}
+
+/* Google Sign-in Button */
+.formBx .form .btn-light {
+    background-color: var(--color-text-primary);
+    color: #1f1f1f; /* Dark text for a light button */
+}
+.formBx .form .btn-light:hover {
+    background-color: #dcdcdc;
+}
+
+/* === 6. SEMESTER PAGE STYLES (FINAL FIX) === */
+
+
+.formBx.semester-form {
+    /* Undo login page animation styles */
+    position: relative;
+    top: auto;
+    left: auto;
+    height: auto;
+    transform: none;
+    
+    /* Center the card */
+    margin: 0 auto;
+    width: 500px;
+    max-width: 90%;
+
+    /* Apply the card styling */
+    background-color: var(--color-surface-panel);
+    border: 1px solid var(--color-outline);
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 5px 45px rgba(0, 0, 0, 0.15);
+}
+
+
+.formBx.semester-form .form {
+    position: static; 
+    padding: 0;
+    transition: none;
+    transform: none;
+}
+
+/* --- The rest of these styles fix the content INSIDE the card --- */
+
+/* This styles the header and makes the text white */
+.formBx.semester-form .form h2 {
+    font-size: 1.5rem;
+    color: var(--color-text-primary);
+    margin-bottom: 10px;
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* This makes the icon gold */
+.formBx.semester-form .form h2 i {
+    color: var(--color-accent-gold);
+}
+
+/* Fixes the paragraph and labels */
+.formBx.semester-form .form .text-muted,
+.formBx.semester-form .form .form-label {
+    color: var(--color-text-secondary);
+}
+
+/* Themed Dropdowns (select) */
+.formBx.semester-form .form .form-select {
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-outline);
+    border-radius: 8px;
+}
+
+.formBx.semester-form .form .form-select:focus {
+    border-color: var(--color-accent-gold);
+    box-shadow: none;
+}
+
+.formBx.semester-form .form .form-select option {
+    background: var(--color-surface-panel);
+    color: var(--color-text-primary);
+}
+
+.formBx.semester-form .form .btn-primary {
+    width: auto;
+    margin-right: 10px; /* Adds space between the buttons */
+}
+
+/* Premium secondary button ("Go to Dashboard") */
+.formBx.semester-form .form .btn-secondary {
+    background-color: var(--color-surface);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-outline);
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.6rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    width: auto;
+}
+
+.formBx.semester-form .form .btn-secondary:hover {
+    background-color: var(--color-outline);
+    color: var(--color-text-primary);
+}
+
+/* Error message styles */
+.formBx.semester-form .error { 
+    color: #F48B8B; /* Lighter red for dark mode */
+}
+.formBx.semester-form .error.show { 
+    display: block; 
+}
+
+/* === 7. PREMIUM SCROLLBAR === */
+
+/* This applies to the whole page */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+/* This is the scrollbar "track" */
+::-webkit-scrollbar-track {
+    background: var(--color-surface); /* Dark background */
+}
+
+/* This is the movable "thumb" */
+::-webkit-scrollbar-thumb {
+    background: var(--color-outline); /* Darker gray */
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-secondary); /* Lighter gray on hover */
+}
+
+/* === 8. PRELOADER === */
+
+/* This hides the app until Vue is ready */
+[v-cloak] {
+    display: none;
+}
+
+/* The preloader "page" */
+#preloader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    background-color: #121212; /* Hard-coded premium black */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.5s ease;
+}
+
+/* The pulsing logo */
+.loader-logo {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    animation: pulse-gold 1.5s ease-in-out infinite;
+}
+
+/* The gold pulse animation */
+@keyframes pulse-gold {
+    0%, 100% {
+        color: var(--color-text-primary);
+        opacity: 0.8;
+    }
+    50% {
+        color: var(--color-accent-gold);
+        opacity: 1;
+    }
 }

@@ -60,6 +60,9 @@ function bootApp(semesterFromFirestore, user) {
     data() {
       return {
         uid: user.uid,
+        today: new Date(),
+        isDarkMode: false,
+        quote: { text: 'Loading...', author: '' },
         showForm: false,
         showConfig: false,
         modalInstance: null,
@@ -95,50 +98,92 @@ function bootApp(semesterFromFirestore, user) {
     },
 
     computed: {
-        /**
-         * Scans all events and returns a unique, sorted list of modules.
-         */
-        uniqueModules() {
-            console.log("[DEBUG] Re-computing unique modules...");
-            const modules = {};
 
-            // 1. Find all 'lesson' events and get their course codes
-            this.events.forEach(event => {
-                if (event.type === 'lesson' && event.courseCode) {
-                    // Use an object to automatically handle duplicates
-                    modules[event.courseCode.toUpperCase()] = {
-                        code: event.courseCode.toUpperCase(),
-                        name: event.courseName || '',
-                        weight: event.weightage || 1
-                    };
-                }
-            });
+      todayFormatted() {
+         // Formats the date as "Tuesday, November 4"
+         const options = { weekday: 'long', month: 'long', day: 'numeric' };
+         return this.today.toLocaleDateString('en-US', options);
+       },
 
-            // 2. Convert object back to an array and sort it
-            const moduleList = Object.values(modules).sort((a, b) => a.code.localeCompare(b.code));
+      /**
+       * Scans all events and returns a unique, sorted list of modules.
+       */
+      uniqueModules() {
+          console.log("[DEBUG] Re-computing unique modules...");
+          const modules = {};
 
-            console.log(`[DEBUG] Found ${moduleList.length} unique modules.`);
-            return moduleList;
-        },
-
-        holidayEvents() {
-          console.log("[DEBUG] Re-computing holiday events...");
-          return this.holidays.map(holiday => {
-              return {
-                  title: holiday.name, // e.g., "New Year's Day"
-                  start: holiday.date, // e.g., "2025-01-01"
-                  allDay: true,
-
-                  // We will set the color directly instead of using a class
-                  backgroundColor: '#fdeaea', // A light red/pink
-                  borderColor: '#fdeaea',     // Match the border
-                  textColor: '#721c24'      // A dark red for the text
-              };
+          // 1. Find all 'lesson' events and get their course codes
+          this.events.forEach(event => {
+              if (event.type === 'lesson' && event.courseCode) {
+                  // Use an object to automatically handle duplicates
+                  modules[event.courseCode.toUpperCase()] = {
+                      code: event.courseCode.toUpperCase(),
+                      name: event.courseName || '',
+                      weight: event.weightage || 1
+                  };
+              }
           });
+
+          // 2. Convert object back to an array and sort it
+          const moduleList = Object.values(modules).sort((a, b) => a.code.localeCompare(b.code));
+
+          console.log(`[DEBUG] Found ${moduleList.length} unique modules.`);
+          return moduleList;
+      },
+
+      holidayEvents() {
+        console.log("[DEBUG] Re-computing holiday events...");
+        return this.holidays.map(holiday => {
+            return {
+                title: holiday.name, // e.g., "New Year's Day"
+                start: holiday.date, // e.g., "2025-01-01"
+                allDay: true,
+
+                backgroundColor: 'var(--color-holiday-bg)',
+                borderColor: 'var(--color-holiday-bg)',
+                textColor: 'var(--color-holiday-text)'      // A dark red for the text
+            };
+        });
       }
     },
 
     methods: {
+
+      async fetchQuote() {
+  			try {
+  				// Note: The 'no-cors' mode is a workaround for this specific API 
+  				// when called from a local file. It might need adjustment.
+  				// We'll use a proxy to bypass local CORS issues.
+  				const response = await fetch('https://proxy.cors.sh/https://zenquotes.io/api/random');
+  
+  				if (!response.ok) {
+  					throw new Error('Network response was not ok');
+  				}
+  
+  				const data = await response.json();
+  
+  				if (data && data[0]) {
+  					this.quote.text = data[0].q; // The quote text
+  					this.quote.author = data[0].a; // The author
+  				} else {
+  					this.quote.text = 'Stay focused and keep going.';
+  					this.quote.author = 'BlockWise';
+  				}
+  			} catch (error) {
+  				console.error('Failed to fetch quote:', error);
+  				// Fallback quote in case of an API error
+  				this.quote.text = 'Success is not final, failure is not fatal: it is the courage to continue that counts.';
+  				this.quote.author = 'Winston Churchill';
+  			}
+   		},
+
+      toggleTheme() {
+  			this.isDarkMode = !this.isDarkMode;
+  			const theme = this.isDarkMode ? 'dark' : 'light';
+  			document.documentElement.setAttribute('data-theme', theme);
+  			localStorage.setItem('theme', theme); // Save the user's choice
+   		},
+
       async loadSemester() {
         if (!this.uid) {
             console.log("No UID, cannot load semester.");
@@ -458,6 +503,18 @@ function bootApp(semesterFromFirestore, user) {
       logout() {
         signOut(auth).then(() => window.location.href = './index.html');
       },
+
+      hidePreloader() {
+        const preloader = document.getElementById('preloader');
+        if (preloader) {
+            // Fade it out
+            preloader.style.opacity = '0';
+            setTimeout(() => {
+                // Hide it completely after the fade
+                preloader.style.display = 'none';
+            }, 500); // 500ms matches the CSS transition
+        }
+    },
 
       // Helper to format time as HH:MM (e.g., "09:00")
       formatTime(date) {
@@ -921,6 +978,11 @@ function bootApp(semesterFromFirestore, user) {
       this.loadSemester();
       this.loadSchedulerConfig();
       this.loadEventsFromFirestore();
+      const savedTheme = localStorage.getItem('theme') || 'light';
+  		this.isDarkMode = (savedTheme === 'dark');
+   		document.documentElement.setAttribute('data-theme', savedTheme);
+      this.fetchQuote();
+      this.hidePreloader();
     }
   }).mount('#app');
 }

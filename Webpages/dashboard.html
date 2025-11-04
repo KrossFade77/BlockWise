@@ -6,128 +6,63 @@
     <title>Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!--<link rel="stylesheet" href="./style.css">-->
     <link rel="stylesheet" href="./Dashboard/dashboard.css">
-    <link rel="stylesheet" href="./style.css">
-
-    <style>
-        /* Override .container to be full-width */
-        .dashboard-container {
-            max-width: 100%;
- 			padding-left: 20px;
-            padding-right: 20px;
- 		}
-
-        /* Style the calendar as a "floating" white panel */
- 		#calendar, .fc {
- 			background-color: white;
- 			border-radius: 8px;
- 			padding: 20px;
- 			box-shadow: 0 5px 45px rgba(0, 0, 0, 0.15);
- 		}
-
-        /* Style the sidebar list as a "floating" panel */
- 		#module-list {
- 			background-color: white;
- 			border-radius: 8px;
- 			padding: 10px;
- 			box-shadow: 0 5px 45px rgba(0, 0, 0, 0.15);
- 		}
-
-        /* Make all text on the gradient background white */
- 		h1, h4 {
- 			color: white;
- 			text-shadow: 0 1px 3px rgba(0,0,0,0.2);
- 		}
-
-        /* Remove the default border from the list-group */
-        #module-list .list-group-item {
- 			border: none;
- 		}
-
-        /* 1. Style the hamburger button */
-        .hamburger-btn {
-            background-color: #f8f9fa; /* Light gray background */
-            border: 1px solid #dee2e6; /* Subtle border */
-            border-radius: 8px;
-            color: #495057;
-        }
-
-        .sidebar-mobile {
-            padding: 0px;
-        }
-
-
-        /* 2. Style the "pop-out" sidebar for mobile */
-        /* On mobile (Bootstrap's "md" breakpoint is < 768px) */
-        @media (max-width: 767px) {
-            .sidebar-mobile {
-                position: fixed; /* Make it float on top */
-                top: 0;
-                left: 0;
-                width: 300px; /* Give it a fixed width */
-                height: 100vh; /* Full screen height */
-                background-color: white;
-                z-index: 1050; /* Higher than the main content */
-                padding: 20px;
-                box-shadow: 0 0 20px rgba(0,0,0,0.2);
-                /* Hide it by default, off-screen */
-                transform: translateX(-100%);
-                transition: transform 0.3s ease-out;
-
-                background-color: #212529; /* Bootstrap's "dark" color */
-                color: #f8f9fa;
-            }
-
-            .sidebar-mobile h4 {
-                color: white;
-             }
-
-            .sidebar-mobile.show {
-                /* Show it by moving it on-screen */
-                transform: translateX(0);
-            }
-
-            /* 3. Add a dark overlay for the background */
-            .sidebar-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0,0,0,0.5);
-                z-index: 1040; /* Just below the sidebar */
-                display: none; /* Hide by default */
-            }
-
-            .sidebar-overlay.show {
-                display: block; /* Show when sidebar is open */
-            }
-        }
-
-
-    </style>
+    
 </head>
 <body>
-    <div id="app" class="dashboard-container my-5">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h1>Event Calendar</h1>
-            <button class="btn btn-danger btn-sm logout-button" @click="logout">Logout</button>
-        </div>
-
-        
-            <div class="d-grid d-md-flex align-items-center gap-3">
-                <button class="btn hamburger-btn" @click="toggleSidebar" title="Toggle Modules">
+    <div id="preloader">
+        <h1 class="loader-logo">BlockWise</h1>
+    </div>
+    <div id="app" class="container-fluid px-4 py-5" v-cloak>
+        <header class="top-navbar">
+            <div class="nav-left">
+                <button class="btn nav-btn" @click="toggleSidebar" title="Toggle Modules">
                     <i class="fas fa-bars"></i>
                 </button>
-                <button class="btn btn-primary" @click="showEventForm">Add Event</button>
-                <button class="btn btn-success" @click="showConfig = !showConfig">Scheduler Settings</button>
-                <button class="btn btn-warning" @click="generateSchedule">Generate Schedule</button>
-                <a href="revisedMCQ.html" class="btn btn-secondary">Quiz Generation</a>
-            </div>     
+                <span class="nav-brand">BlockWise</span>
+            </div>
+
+            <nav class="nav-center d-none d-md-flex">
+                <a href="#" @click.prevent="showForm = true">Add Event</a>
+                <a href="#" @click.prevent="showConfig = !showConfig">Scheduler Settings</a>
+                <a href="#" @click.prevent="generateSchedule">Generate Schedule</a>
+                <a href="revisedMCQ.html">Quiz Generation</a>
+            </nav>
+
+            <div class="nav-right">
+                <button class="btn nav-btn" @click="toggleTheme" title="Toggle Theme">
+                    <i class="fas" :class="isDarkMode ? 'fa-sun' : 'fa-moon'"></i>
+                </button>
+                <button class="btn nav-btn" @click="logout" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="hero-card">
+            <div class="hero-text">
+                <h2>Good afternoon!</h2>
+                <p>Today is {{ todayFormatted }}. Let's get things planned.</p>
+            </div>
+            <div class="hero-quote">
+    	        <p class="quote-text">"{{ quote.text }}"</p>
+       	        <span class="quote-author">— {{ quote.author }}</span>
+ 	        </div>
+        </div>
         
         
         <div class="row">
             <div :class="['sidebar-mobile', { 'show': showSidebar }]" v-if="showSidebar">
+                <div class="d-md-none mb-4">
+                    <h4 class="mb-3">Navigation</h4>
+                    <div class="list-group">
+                        <a href="#" @click.prevent="showForm = true" class="list-group-item list-group-item-action">Add Event</a>
+                        <a href="#" @click.prevent="showConfig = !showConfig" class="list-group-item list-group-item-action">Scheduler Settings</a>
+                        <a href="#" @click.prevent="generateSchedule" class="list-group-item list-group-item-action">Generate Schedule</a>
+                        <a href="revisedMCQ.html" class="list-group-item list-group-item-action">Quiz Generation</a>
+                    </div>
+                </div>
                 <h4>My Modules</h4>
                 <div class="list-group" id="module-list">
                     <a v-if="activeModuleFilter" href="#" @click.prevent="setFilter(null)" 
@@ -151,94 +86,105 @@
             </div>
             <div :class="['sidebar-overlay', { 'show': showSidebar }]" @click="toggleSidebar"></div>
 
-            <div v-if="showConfig" class="card p-3 mb-4"> 
-                <h5>Scheduler Settings</h5>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Daily Study Start</label>
-                        <input type="time" class="form-control" v-model="schedulerConfig.dailyStart"> 
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Daily Study End</label>
-                        <input type="time" class="form-control" v-model="schedulerConfig.dailyEnd"> 
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Min Study Duration (mins)</label>
-                        <input type="number" class="form-control" v-model.number="schedulerConfig.minStudyDuration"> 
-                    </div>
-                    <!-- <div class="col-md-6 mb-3">
-                        <label class="form-label">Max Study Duration (mins)</label>
-                        <input type="number" class="form-control" v-model.number="schedulerConfig.maxStudyDuration"> 
-                    </div> -->
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Weeks to generate</label>
-                        <input type="number" min="1" max="16" class="form-control" v-model.number="schedulerConfig.weeksToGenerate" placeholder="e.g., 4">
-                    </div>
+            <div v-if="showConfig" class="premium-modal-backdrop" @click.self="showConfig = false">
+                <div class="premium-modal-content"> 
+                    <button :class="isDarkMode ? 'btn-close btn-close-white' : 'btn-close'" @click="showConfig = false"></button>
+                    <h4 class="mb-0">Scheduler Settings</h4> 
+                    <form @submit.prevent="saveSchedulerConfig">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Daily Study Start</label>
+                                <input type="time" class="form-control" v-model="schedulerConfig.dailyStart"> 
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Daily Study End</label>
+                                <input type="time" class="form-control" v-model="schedulerConfig.dailyEnd"> 
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Min Study Duration (mins)</label>
+                                <input type="number" class="form-control" v-model.number="schedulerConfig.minStudyDuration"> 
+                            </div>
+                            <!-- <div class="col-md-6 mb-3">
+                                <label class="form-label">Max Study Duration (mins)</label>
+                                <input type="number" class="form-control" v-model.number="schedulerConfig.maxStudyDuration"> 
+                            </div> -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Weeks to generate</label>
+                                <input type="number" min="1" max="16" class="form-control" v-model.number="schedulerConfig.weeksToGenerate" placeholder="e.g., 4">
+                            </div>
+                        </div>
+                        <div class="text-end mt-4">
+                            <button type="button" class="btn btn-secondary me-2" @click="showConfig = false">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save Config</button>
+                        </div>
+                    </form> 
                 </div>
-                <button class="btn btn-primary" @click="saveSchedulerConfig">Save Config</button> 
             </div>
 
-
-
-            <!-- <button class="btn btn-primary mb-3" @click="showEventForm">Add Event</button> -->
-            <div class="event-form" v-if="showForm">
-                <form @submit.prevent="addEvent">
-                    <div class="mb-3">
-                        <label for="eventTitle" class="form-label">Event Title</label>
-                        <input type="text" class="form-control" id="eventTitle" v-model="event.title" placeholder="Enter event title" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="eventDate" class="form-label">Date</label>
-                        <input type="date" class="form-control" id="eventDate" v-model="event.date" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="eventTime" class="form-label">Start Time</label>
-                        <input type="time" class="form-control" id="eventTime" v-model="event.startTime" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="eventEndTime" class="form-label">End Time</label>
-                        <input type="time" class="form-control" id="eventEndTime" v-model="event.endTime" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="eventType" class="form-label">Type</label>
-                        <select class="form-control" id="eventType" v-model="event.type" required>
-                            <option disabled value=" ">--Select Type --</option>
-                            <option value="lesson">Lesson</option>
-                            <option value="non-lesson">Non-Lesson</option>
-                        </select>
-                    </div>
-
-                    <!-- Repeat Weekly Checkbox + Day Picker -->
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="repeatWeekly" v-model="event.repeat">
-                        <label class="form-check-label" for="repeatWeekly">Repeat weekly</label>
-                    </div>
-
-                    <div v-if="event.type === 'lesson'">
+            <div v-if="showForm" class="premium-modal-backdrop" @click.self="showForm = false">
+                <div class="premium-modal-content">
+                    <button :class="isDarkMode ? 'btn-close btn-close-white' : 'btn-close'" @click="showForm = false"></button>
+                    <h4>Add New Event</h4>
+                    <form @submit.prevent="addEvent">
                         <div class="mb-3">
-                            <label class="form-label">Course Code</label>
-                            <input type="text" class="form-control" v-model="event.courseCode" required> 
+                            <label for="eventTitle" class="form-label">Event Title</label>
+                            <input type="text" class="form-control" id="eventTitle" v-model="event.title" placeholder="Enter event title" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Course Name</label>
-                            <input type="text" class="form-control" v-model="event.courseName" required> 
+                            <label for="eventDate" class="form-label">Date</label>
+                            <input type="date" class="form-control" id="eventDate" v-model="event.date" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Module Weight (1–5)</label>
-                            <input type="number" class="form-control" v-model.number="event.weightage" min="1" max="5" required> 
+                            <label for="eventTime" class="form-label">Start Time</label>
+                            <input type="time" class="form-control" id="eventTime" v-model="event.startTime" required>
                         </div>
-                    </div>
+                        <div class="mb-3">
+                            <label for="eventEndTime" class="form-label">End Time</label>
+                            <input type="time" class="form-control" id="eventEndTime" v-model="event.endTime" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="eventType" class="form-label">Type</label>
+                            <select class="form-select" id="eventType" v-model="event.type" required>
+                                <option disabled value=" ">--Select Type --</option>
+                                <option value="lesson">Lesson</option>
+                                <option value="non-lesson">Non-Lesson</option>
+                            </select>
+                        </div>
 
-                    <button type="submit" class="btn btn-primary">Save Event</button>
-                    <button type="button" class="btn btn-secondary ms-2" @click="showForm = false">Cancel</button>
-                </form>
+                        <!-- Repeat Weekly Checkbox + Day Picker -->
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="repeatWeekly" v-model="event.repeat">
+                            <label class="form-check-label" for="repeatWeekly">Repeat weekly</label>
+                        </div>
+
+                        <div v-if="event.type === 'lesson'">
+                            <div class="mb-3">
+                                <label class="form-label">Course Code</label>
+                                <input type="text" class="form-control" v-model="event.courseCode" required> 
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Course Name</label>
+                                <input type="text" class="form-control" v-model="event.courseName" required> 
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Module Weight (1–5)</label>
+                                <input type="number" class="form-control" v-model.number="event.weightage" min="1" max="5" required> 
+                            </div>
+                        </div>
+
+                        <div class="text-end mt-4"> 
+                            <button type="button" class="btn btn-secondary me-2" @click="showForm = false">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Save Event</button>
+                        </div>
+                    </form>
+                </div>
             </div>
             <div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title" id="eventModalLabel">{{ editMode ? 'Edit Event' : 'Event Details' }}</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" @click="editMode = false" aria-label="Close"></button>
+                            <button type="button" :class="isDarkMode ? 'btn-close btn-close-white' : 'btn-close'" data-bs-dismiss="modal" @click="editMode = false" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <div v-if="!editMode">
