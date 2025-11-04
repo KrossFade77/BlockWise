@@ -12,6 +12,9 @@ const {onRequest} = require("firebase-functions/https");
 const {defineSecret} = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const GEMINI_API_KEY = defineSecret("GEMINI_API_KEY");
+const {buildSchedule} = require("../Webpages/Dashboard/scheduler.js")
+
+import { buildSchedule } from './scheduler.js';
 
 // For cost control, you can set the maximum number of containers that can be
 // running at the same time. This helps mitigate the impact of unexpected
@@ -160,3 +163,32 @@ exports.parse = onRequest(
      }
    }
 );
+
+exports.renderSchedule = onRequest(
+   { region: "asia-southeast1" },
+   async (req, res) => {
+    try {
+      if (req.method !== 'POST') {
+        res.status(405).json({ error: 'Use POST' });
+        return;
+      }
+
+      const payload = req.body || {};
+      logger.info('[generate] payload keys', { keys: Object.keys(payload || {}) });
+
+      if (!payload.semester?.startDate || !payload.semester?.endDate) {
+        res.status(400).json({ error: 'Missing semester.startDate/endDate' });
+        return;
+      }
+      if (!payload.schedulerConfig?.dailyStart || !payload.schedulerConfig?.dailyEnd) {
+        res.status(400).json({ error: 'Missing schedulerConfig.dailyStart/dailyEnd' });
+        return;
+      }
+
+      const schedule = await buildSchedule(payload); // -> { sessions: [...] }
+      res.status(200).json(schedule);
+    } catch (err) {
+      logger.error('[generate] error', err);
+      res.status(500).json({ error: 'Internal error' });
+    }
+});
