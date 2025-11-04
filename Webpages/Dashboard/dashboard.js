@@ -21,7 +21,7 @@ onAuthStateChanged(auth, async (user) => {
   const appEl = document.getElementById('app');
 
   if (!user) {
-    if (gate) gate.innerHTML = `<p>You are signed out. Redirecting to login…</p>`;
+    setGateText(gate, "You are signed out. Redirecting to login…");
     window.location.href = './index.html';
     return;
   }
@@ -31,7 +31,7 @@ onAuthStateChanged(auth, async (user) => {
   try {
     const snap = await getDoc(semRef);
     if (!snap.exists()) {
-      if (gate) gate.innerHTML = `<p>No semester found. Redirecting to semester setup…</p>`;
+      setGateText(gate, "No semester found. Redirecting to semester setup…");      
       window.location.href = './semester.html';
       return;
     }
@@ -41,7 +41,7 @@ onAuthStateChanged(auth, async (user) => {
     const endDate = data.endDate;
 
     if (!startDate || !endDate) {
-      if (gate) gate.innerHTML = `<p>Incomplete semester dates. Redirecting to semester setup…</p>`;
+      setGateText(gate, "Incomplete semester dates. Redirecting to semester setup…");
       window.location.href = './semester.html';
       return;
     }
@@ -51,9 +51,15 @@ onAuthStateChanged(auth, async (user) => {
     if (appEl) appEl.style.display = 'block';
   } catch (e) {
     console.error('[Dashboard] Semester read error:', e);
-    if (gate) gate.innerHTML = `<p>Failed to load semester. Please try again.</p>`;
+    setGateText(gate, "Failed to load semester. Please try again.");
   }
 });
+
+function setGateText(el, text) {
+  if (!el) return;
+  el.textContent = "";
+  el.appendChild(document.createTextNode(text));
+}
 
 function bootApp(semesterFromFirestore, user) {
   Vue.createApp({

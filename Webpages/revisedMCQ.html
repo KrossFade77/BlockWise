@@ -101,7 +101,12 @@ Enter your notes below. The AI will generate 10 multiple-choice questions (with 
       const quizContainer = document.getElementById("quiz");
       const submitBtn = document.getElementById("submitBtn");
 
-      quizContainer.innerHTML = "<p><em>Generating questions...</em></p>";
+      clearNode(quizContainer);
+      const p = document.createElement("p");
+      const em = document.createElement("em");
+      em.textContent = "Generating questions...";
+      p.appendChild(em);
+      quizContainer.appendChild(p);
       submitBtn.style.display = "none";
 
       // IMPORTANT: match your Cloud Function parser format exactly
@@ -143,10 +148,17 @@ Enter your notes below. The AI will generate 10 multiple-choice questions (with 
           renderParsed(questions);
           submitBtn.style.display = "block";
         } else {
-          quizContainer.innerHTML = "<p>No questions were generated. Try again.</p>";
+          clearNode(quizContainer);
+          const msg = document.createElement("p");
+          msg.textContent = "No questions were generated. Try again.";
+          quizContainer.appendChild(msg);
         }
       } catch (err) {
-        quizContainer.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
+        clearNode(quizContainer);
+        const msg = document.createElement("p");
+        msg.style.color = "red";
+        msg.textContent = `Error: ${err.message}`;
+        quizContainer.appendChild(msg);
         console.error(err);
       }
     }
@@ -154,11 +166,19 @@ Enter your notes below. The AI will generate 10 multiple-choice questions (with 
     // Render server-parsed questions: [{ Question, Options[], Correct }]
     function renderParsed(questions) {
       const quizContainer = document.getElementById("quiz");
-      quizContainer.innerHTML = "";
+      clearNode(quizContainer);
 
       questions.forEach((qObj, i) => {
         const qDiv = document.createElement("div");
         qDiv.className = "question";
+
+        // Title line: <p><strong>Q1.</strong> Question text</p>
+        const p = document.createElement("p");
+        const strong = document.createElement("strong");
+        strong.textContent = `Q${i + 1}.`;
+        p.appendChild(strong);
+        p.appendChild(document.createTextNode(" " + (qObj.Question || "")));
+        qDiv.appendChild(p);
 
         const opts = (qObj.Options || []).slice(0, 4);
         // Determine the correct LETTER (A/B/C/D) by matching Correct text to an option
@@ -168,20 +188,20 @@ Enter your notes below. The AI will generate 10 multiple-choice questions (with 
           if (!correctLetter && qObj.Correct && opt.trim() === qObj.Correct.trim()) {
             correctLetter = letter;
           }
-          return `
-            <label class="option">
-              <input type="radio" name="q${i + 1}" value="${letter}">
-              ${letter}) ${opt}
-            </label>`;
-        }).join("");
+          // <label class="option"><input ...> A) text</label>
+          const label = document.createElement("label");
+          label.className = "option";
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = `q${i + 1}`;
+          input.value = letter;
+          label.appendChild(input);
+          label.appendChild(document.createTextNode(` ${letter}) ${opt}`));
+          qDiv.appendChild(label);
+        });
 
         qDiv.dataset.correctLetter = correctLetter || ""; // fallback empty if parser couldn't match
-
-        qDiv.innerHTML = `
-          <p><strong>Q${i + 1}.</strong> ${qObj.Question || ""}</p>
-          ${optionHtml}
-          <div class="result" id="result${i + 1}"></div>
-        `;
+        
         quizContainer.appendChild(qDiv);
       });
     }
