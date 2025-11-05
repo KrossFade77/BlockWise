@@ -1,7 +1,5 @@
 // Time functions
 
-function clamp(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
-
 function parseTimeHHMM(hhmm) {
   const [h, m] = String(hhmm || '00:00').split(':').map(Number);
   return { h: h || 0, m: m || 0 };
@@ -61,7 +59,10 @@ function endOfISOWeek(dateISO) {
 }
 
 
-
+/**
+ * Build a map { dateISO: { start: Date, end: Date } } for every day in
+ * [horizonStartISO, horizonEndISO], clamped to the semester.
+ */
 function buildDailyWindows(semester, cfg, horizonStartISO, horizonEndISO) {
   const map = {};
   const startISO = maxISO(horizonStartISO, semester.startDate);
@@ -80,20 +81,23 @@ function buildDailyWindows(semester, cfg, horizonStartISO, horizonEndISO) {
   return map;
 }
 
-
+/**
+ * Convert events (lessons + personal) into busy intervals for a given day.
+ * Expects events with { date, time/startTime, endTime }.
+ */
 function toBusyForDay(dateISO, events) {
   const out = [];
   for (const ev of events || []) {
     if (ev.date !== dateISO) continue;
     const startHHMM = ev.startTime || ev.time;
     const endHHMM   = ev.endTime;
-    if (!startHHMM || !endHHMM) continue; 
+    if (!startHHMM || !endHHMM) continue; // skip malformed
     const s = toDateTime(dateISO, startHHMM);
     const e = toDateTime(dateISO, endHHMM);
-    if (e <= s) continue; 
+    if (e <= s) continue; // ignore zero/negative lengths
     out.push({ start: s, end: e });
   }
-  
+  // Merge overlaps (normalize)
   out.sort((a, b) => a.start - b.start);
   const merged = [];
   for (const slot of out) {
@@ -108,11 +112,15 @@ function toBusyForDay(dateISO, events) {
   return merged;
 }
 
-
+/**
+ * Given a day window and existing busy slots for that day, try to place a
+ * new interval of length `mins` starting as early as possible.
+ */
 function placeOnDay(dayWindow, busy, mins) {
   const durationMs = mins * 60 * 1000;
 
   let cursor = new Date(dayWindow.start);
+  // walk through gaps between busy blocks
   for (let i = 0; i <= busy.length; i++) {
     const gapEnd = (i < busy.length) ? busy[i].start : dayWindow.end;
     if (cursor.getTime() + durationMs <= gapEnd.getTime()) {
@@ -120,6 +128,7 @@ function placeOnDay(dayWindow, busy, mins) {
       const end   = addMinutes(start, mins);
       return { start, end };
     }
+    // move cursor to end of this busy block
     if (i < busy.length) {
       cursor = new Date(Math.max(cursor, busy[i].end));
     }
@@ -127,7 +136,9 @@ function placeOnDay(dayWindow, busy, mins) {
   return null;
 }
 
-
+/**
+ * Try to place a session on `targetDayISO` or the next available day within the horizon.
+ */
 function findSlotOnOrAfter(targetDayISO, mins, dailyWindows, busyMap) {
   const allDays = Object.keys(dailyWindows).sort(); // ISO sorts chronologically
   const startIdx = Math.max(0, allDays.indexOf(targetDayISO));
@@ -142,9 +153,8 @@ function findSlotOnOrAfter(targetDayISO, mins, dailyWindows, busyMap) {
   return null;
 }
 
-
-
-// Scheduling review blocks
+// -------------------------------
+// Review expansion & schedule
 // -------------------------------
 
 const DEFAULT_INTERVALS = [1, 3, 7];
@@ -161,49 +171,58 @@ const DURATION_BY_WEIGHT = {
  * a lesson “yesterday” still spawns +1 today, etc.
  */
 function durationFor(weight, interval, floorMinutes = 15, capMinutes = 240) {
-    const w = Math.min(5, Math.max(1, Number(weight || 1)));
-    const i = Number(interval);
-    const table = DURATION_BY_WEIGHT[w] || DURATION_BY_WEIGHT[i];
-    const mins = table[i] ?? table[7] ?? 30; // fallback just in case
-    // Clamp for safety:
-    return Math.max(floorMinutes, Math.min(capMinutes, mins));
+  const w = Math.min(5, Math.max(1, Number(weight || 1)));
+  const i = Number(interval);
+  const table = DURATION_BY_WEIGHT[w] || DURATION_BY_WEIGHT[1]; // fixed fallback
+  const mins = table[i] ?? table[7] ?? 30;
+  return Math.max(floorMinutes, Math.min(capMinutes, mins));
 }
 
-function expandReviews(modules, horizonStartISO, horizonEndISO) {
-  const weekStartISO = startOfISOWeek(horizonStartISO);
-  const weekEndISO   = endOfISOWeek(horizonStartISO);
+function expandAnchorsThisWeek(modules, todayISO) {
+  const weekStartISO = startOfISOWeek(todayISO);
+  const weekEndISO   = endOfISOWeek(todayISO);
+  const inThisWeek = (d) => d >= weekStartISO && d <= weekEndISO;
 
-  // pick only this week's lessons
-  const inThisWeek = (dateISO) => (dateISO >= weekStartISO && dateISO <= weekEndISO);
-
-  const lessons = (modules || []).filter(
-    e => e.type === 'lesson' && e.date && inThisWeek(e.date)
-  );
-
-  // one anchor per module (course)
   const byModule = new Map();
-  for (const e of lessons) {
+  for (const e of modules || []) {
+    if (e.type !== 'lesson' || !e.date || !inThisWeek(e.date)) continue;
     const key = e.courseCode || e.courseName || e.title || 'Module';
-    // if a module had >1 lesson in a week, keep the earliest in that week
     if (!byModule.has(key) || e.date < byModule.get(key).date) {
-      byModule.set(key, e);
+      byModule.set(key, { moduleName: key, anchorDate: e.date, weight: Number(e.weightage || 1) });
     }
   }
-
-  const out = [];
-  for (const e of byModule.values()) {
-    out.push({
-      moduleName: e.courseCode || e.courseName || e.title || 'Module',
-      anchorDate: e.date,
-      weight: e.weightage || 1,
-      intervals: DEFAULT_INTERVALS
-    });
-  }
-  return out;
+  return Array.from(byModule.values());
 }
 
+function buildLessonsIndex(modules) {
+  const idx = new Map();
+  for (const e of modules || []) {
+    if (e.type !== 'lesson' || !e.date) continue;
+    const key = e.courseCode || e.courseName || e.title || 'Module';
+    if (!idx.has(key)) idx.set(key, []);
+    idx.get(key).push(e.date);
+  }
+  for (const [k, arr] of idx) arr.sort(); // ISO sort
+  return idx;
+}
+
+function nextClassAfter(moduleName, afterISO, lessonsIndex) {
+  const arr = lessonsIndex.get(moduleName) || [];
+  for (const d of arr) if (d > afterISO) return d;
+  return null;
+}
+
+function futureClassesWithin(moduleName, afterISO, untilISO, lessonsIndex) {
+  const arr = lessonsIndex.get(moduleName) || [];
+  let n = 0;
+  for (const d of arr) if (d > afterISO && d <= untilISO) n++;
+  return n;
+}
+
+
 /**
- * Input payload comes directly from frontend
+ * Core entry: build the spaced-repetition schedule.
+ * Input payload shape comes directly from your frontend:
  * {
  *   semester: { startDate: 'YYYY-MM-DD', endDate: 'YYYY-MM-DD' },
  *   schedulerConfig: { dailyStart, dailyEnd, minStudyDuration, weeksToGenerate },
@@ -214,59 +233,121 @@ function expandReviews(modules, horizonStartISO, horizonEndISO) {
  */
 function buildSchedule(payload) {
   const { semester, schedulerConfig: cfg, modules, personalEvents } = payload || {};
-  if (!semester?.startDate || !semester?.endDate) {
-    throw new Error('Missing semester dates');
-  }
-  if (!cfg?.dailyStart || !cfg?.dailyEnd) {
-    throw new Error('Missing schedulerConfig.dailyStart/dailyEnd');
-  }
+  if (!semester?.startDate || !semester?.endDate) throw new Error('Missing semester dates');
+  if (!cfg?.dailyStart || !cfg?.dailyEnd) throw new Error('Missing schedulerConfig.dailyStart/dailyEnd');
 
-  const weeks = Math.max(1, Number(cfg.weeksToGenerate || 4));
-  const horizonStartISO = todayISO();
-  const horizonEndISO = addDaysISO(horizonStartISO, weeks * 7);
+  const weeks           = Math.max(1, Number(cfg.weeksToGenerate || 4));
+  const horizonStartISO = maxISO(todayISO(), semester.startDate);
+  const horizonEndISO   = minISO(addDaysISO(horizonStartISO, weeks * 7), semester.endDate);
+  if (horizonStartISO > horizonEndISO) return { sessions: [] };
 
-  // Day windows for [today .. today+weeks], clamped by semester
+  // windows + fixed busy
   const dailyWindows = buildDailyWindows(semester, cfg, horizonStartISO, horizonEndISO);
-
-  // Busy map from lessons + personal events (reviews are not included)
   const busyMap = {};
   for (const day of Object.keys(dailyWindows)) {
     busyMap[day] = toBusyForDay(day, [...(modules || []), ...(personalEvents || [])]);
   }
 
-  // Expand review targets by lessons in [(today-7)..horizonEnd]
-  const targets = expandReviews(modules || [], horizonStartISO, horizonEndISO);
+  // anchors and lessons index
+  const anchors      = expandAnchorsThisWeek(modules || [], horizonStartISO);
+  const lessonsIndex = buildLessonsIndex(modules || []);
 
-  // Greedy placement: heavier modules first, then earliest anchors
-  targets.sort((a, b) => (b.weight - a.weight) || a.anchorDate.localeCompare(b.anchorDate));
+  // per-module state: single active cycle; restart only from next class after +7
+  const states = anchors.map(a => ({
+    moduleName: a.moduleName,
+    weight: a.weight,
+    anchorDate: a.anchorDate, // current cycle’s anchor (a class date)
+    idx: 0,                   // 0->+1, 1->+3, 2->+7
+    done: false,
+    cyclesLeft: futureClassesWithin(a.moduleName, a.anchorDate, horizonEndISO, lessonsIndex) // how many future class anchors available in horizon
+  }));
 
   const sessions = [];
-  
-  for (const t of targets) {
-    for (const interval of t.intervals) {
-      const targetDay = addDaysISO(t.anchorDate, interval);
+  const MAX_PASSES = 2000;
 
-      // Never schedule in the past
-      if (targetDay < horizonStartISO) continue;
+  // Weight-tiered scheduler: try all W=5 candidates first, then W=4, ..., W=1 in each pass.
+  for (let pass = 0; pass < MAX_PASSES; pass++) {
+    let placedSomethingThisPass = false;
 
-      const mins = durationFor(t.weight, interval, Number(cfg.minStudyDuration ?? 15));
-
-      const slot = findSlotOnOrAfter(targetDay, mins, dailyWindows, busyMap);
-      if (!slot) continue; // couldn’t fit within horizon
-
-      // Reserve the time to avoid overlaps with later placements
-      const reserved = busyMap[slot.dateISO] || (busyMap[slot.dateISO] = []);
-      reserved.push({ start: slot.start, end: slot.end });
-      reserved.sort((a, b) => a.start - b.start);
-
-      sessions.push({
-        moduleName: t.moduleName,
-        start: toISO(slot.start),
-        end: toISO(slot.end),
-        interval,
-        status: (slot.dateISO === targetDay ? 'planned' : 'moved')
+    // iterate tiers 5 -> 1
+    for (let tier = 5; tier >= 1; tier--) {
+      // build candidates for this tier only
+      const batch = states.flatMap(s => {
+        if (s.done || s.weight !== tier || s.idx >= DEFAULT_INTERVALS.length) return [];
+        const interval  = DEFAULT_INTERVALS[s.idx];
+        const targetDay = addDaysISO(s.anchorDate, interval);
+        return (targetDay <= horizonEndISO) ? [{ s, interval, targetDay }] : [];
       });
+
+      if (batch.length === 0) continue;
+
+      // within the same weight, prefer earliest targets (then module name for stability)
+      batch.sort((a, b) =>
+        a.targetDay.localeCompare(b.targetDay) ||
+        a.s.moduleName.localeCompare(b.s.moduleName)
+      );
+
+      let placedInTier = false;
+
+      for (const { s, interval, targetDay } of batch) {
+        if (s.done) continue;
+
+        // skip past-due step (rare edge)
+        if (targetDay < horizonStartISO) {
+          s.idx++;
+          if (s.idx >= DEFAULT_INTERVALS.length) s.done = true;
+          continue;
+        }
+
+        const mins = durationFor(s.weight, interval, Number(cfg.minStudyDuration ?? 15));
+        const slot = findSlotOnOrAfter(targetDay, mins, dailyWindows, busyMap);
+        if (!slot) {
+          // couldn’t place → advance within the cycle; if cycle finishes, stop module
+          s.idx++;
+          if (s.idx >= DEFAULT_INTERVALS.length) s.done = true;
+          continue;
+        }
+
+        placedInTier = true;
+        placedSomethingThisPass = true;
+
+        // reserve
+        const reserved = busyMap[slot.dateISO] || (busyMap[slot.dateISO] = []);
+        reserved.push({ start: slot.start, end: slot.end });
+        reserved.sort((a, b) => a.start - b.start);
+
+        sessions.push({
+          moduleName: s.moduleName,
+          start: toISO(slot.start),
+          end:   toISO(slot.end),
+          interval,
+          status: (slot.dateISO === targetDay ? 'planned' : 'moved')
+        });
+
+        // advance cycle; when +7 placed, anchor moves to next class (not +7)
+        if (interval === 7) {
+          // find next class to restart from; only if there are still classes in horizon
+          const afterISO   = slot.dateISO;
+          const nextAnchor = nextClassAfter(s.moduleName, afterISO, lessonsIndex);
+
+          if (nextAnchor && nextAnchor <= horizonEndISO && s.cyclesLeft > 0) {
+            s.anchorDate = nextAnchor;
+            s.idx = 0;                 // restart +1,+3,+7 on new anchor
+            s.cyclesLeft--;            // consumed one future anchor
+          } else {
+            s.done = true;
+          }
+        } else {
+          s.idx++; // continue within the same cycle
+        }
+      }
+
+      // If we placed something in this tier, restart the outer pass
+      // so tier 5 gets to keep preempting lower tiers as long as it still has work.
+      if (placedInTier) break;
     }
+
+    if (!placedSomethingThisPass) break; // no tier could place anything → stop
   }
 
   return { sessions };

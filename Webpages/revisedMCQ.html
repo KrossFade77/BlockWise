@@ -3,305 +3,399 @@
 <head>
   <meta charset="UTF-8">
   <title>AI MCQ Generator (Interactive)</title>
+  <!-- Poppins font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400&display=swap" rel="stylesheet">
+
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 30px;
-      background-color: #f8f9fa;
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family:'Poppins', sans-serif;
     }
+
+    /* ✅ Black–grey animated gradient background */
+    body {
+      padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      background: linear-gradient(-45deg, #000000, #1c1c1c, #3a3a3a, #1c1c1c);
+      background-size: 400% 400%;
+      animation: change 10s ease-in-out infinite;
+      transition: background-image 1s ease-in-out;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.10);
+      z-index: -1;
+    }
+
+    @keyframes change {
+      0% { background-position: 0 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0 50%; }
+    }
+
+    .container {
+      width: 800px;
+      max-width: 100%;
+      background: #2a2b2e;
+      padding: 28px;
+      border-radius: 12px;
+      border: 1px solid #3c4043;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    }
+
+    /* Gold tab around heading */
+    .heading-tab {
+      display: inline-block;
+        width: fit-content;      /* Shrink to fit content */
+      
+      border-radius: 8px;
+      padding: 6px 20px;
+      margin: 0 auto 20px auto; /
+    }
+
+    .heading-tab h2 {
+    margin: 0;
+    font-weight: 700;          
+    color: goldenrod;            
+    font-style: italic;            
+    font-size: 30px;               
+    letter-spacing: 1px;          
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3); 
+    }
+
+    h3 {
+      text-align: center;
+      font-weight: 500;
+      margin-bottom: 18px;
+      color: #e8eaed;
+    }
+
     textarea {
       width: 100%;
-      margin-bottom: 15px;
+      height: 180px;
+      padding: 12px;
+      border-radius: 8px;
+      background: #3c4043;
+      border: 1px solid #5f6368;
+      color: #e8eaed;
+      resize: vertical;
+      transition: 0.15s border;
       font-family: monospace;
-      padding: 10px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
     }
-    button {
-      background-color: #007bff;
-      color: white;
+
+    textarea:focus {
+      border-color: #8ab4f8;
+      box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.25);
+      outline: none;
+    }
+
+    /* Generate MCQs button styling */
+    .generate-btn {
+      background: none;
       border: none;
-      padding: 10px 18px;
-      border-radius: 6px;
+      color: goldenrod;
+      font-size: 15px;
+      font-style: italic;
+      font-weight: 700;
       cursor: pointer;
-      transition: 0.3s;
+      padding: 6px 0;
+      margin: 15px auto; /* centers it horizontally */
+      display: block;
+      text-align: center;
+      transition: color 0.2s ease, text-shadow 0.2s ease;
     }
-    button:hover {
-      background-color: #0056b3;
+
+    .generate-btn:hover {
+        color: #ffffff;
+        text-shadow: 0 0 8px gold;
+        background: none;
     }
+
+    /* Upload button styling */
+    label[for="fileInput"] {
+      background: #d4af37; /* gold background */
+      border: none;
+      color: black; /* plus sign color */
+      font-size: 22px;
+      font-style: none;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+
+    label[for="fileInput"]:hover {
+      color: #d4af37; /* gold plus sign on hover */
+      background: black; /* background changes on hover */
+      box-shadow: 0 0 8px rgba(138,180,248,0.5);
+    }
+
     .question {
-      background: white;
-      border-radius: 10px;
-      padding: 15px;
-      margin: 20px 0;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      background: #303134;
+      border: 1px solid #3c4043;
+      padding: 16px;
+      border-radius: 12px;
+      margin: 18px 0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      color: #e8eaed;
     }
+
     .option {
       display: block;
-      margin: 5px 0;
+      margin: 6px 0;
+      font-size: 14px;
+      color: #e8eaed;
     }
+
     .result {
-      font-weight: bold;
-      margin-top: 8px;
+      font-weight: 500;
+      margin-top: 6px;
     }
-    .correct { color: green; }
-    .wrong { color: red; }
+
+    .correct { color: #81c995; }
+    .wrong { color: #f28b82; }
+
+    @media (max-width: 767px) {
+      .container { padding: 20px; }
+      textarea { height: 150px; }
+    }
+
+    .container > p {
+      color: #ffffff;
+      font-weight: 400;
+      text-align: center;
+    }
+
+    #submitBtn {
+  display: none; /* keep hidden initially */
+  background-color: goldenrod;
+  color: #2a2b2e;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 15px auto;
+  display: block; /* will still work when JS sets it to block */
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+#submitBtn:hover {
+  background-color: #d4af37; /* slightly brighter gold */
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(218, 165, 32, 0.7);
+}
+#backBtn {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  color: goldenrod;
+  font-weight: 700;
+  font-size: 16px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+#backBtn:hover {
+  color: #ffffff;
+  text-shadow: 0 0 6px gold;
+}
+
   </style>
 </head>
 <body>
-  <div>
-    <a href="dashboard.html" class="btn btn-secondary">Back</a>
-  </div>
-  <h2>AI MCQ Generator</h2>
-  <p>Paste your notes below. The AI will automatically create 10 MCQs (with answers) based on them.</p>
+<a id="backBtn" href="dashboard.html" style="text-decoration:none;">&#8592; Back to Schedule</a>
 
-  <textarea id="notes" rows="12" cols="70"></textarea><br>
-  <div style="margin: 8px 0;">
-    <label for="fileInput">Upload notes (.txt / .pdf / .docx): </label>
-    <input id="fileInput" type="file" accept=".txt,.pdf,.docx">
-    <span id="uploadStatus" style="margin-left: 8px; color:#555;"></span>
-  </div>  
-  <button onclick="sendPrompt()">Generate MCQs</button>
+<div class="container">
+  <div style ="text-align: center;">
+  <div class="heading-tab">
+    <h2>AI MCQ Generator</h2>
+  </div>
+  </div>
+  <p style="text-align:center;">Paste notes or upload files. The AI will generate 10 MCQs.</p>
+
+  <textarea id="notes"></textarea>
+
+  <div style="display:flex; flex-direction:column; align-items:flex-end; margin-top:8px; margin-bottom:5px;">
+    <div style="display:flex; align-items:center;">
+      <label for="fileInput" style="margin-left:8px;">+</label>
+      <input type="file" id="fileInput" accept=".txt,.pdf,.docx" style="display:none;">
+    </div>
+    <span style="font-size:12px; color:#bbb; margin-top:2px;">Upload your notes!</span>
+  </div>
+
+  <p id="fileStatus" style="text-align:right; font-size:13px; color:#bbb;"></p>
+
+  <button class="generate-btn" onclick="sendPrompt()">Generate MCQs</button>
 
   <h3>Generated Questions:</h3>
   <div id="quiz"></div>
   <button id="submitBtn" style="display:none;" onclick="checkAllAnswers()">Submit All</button>
+</div>
 
-  <script>
-    // Use Firebase Hosting rewrites → Functions (no CORS issues)
-    const API_BASE = "/api";
-    const textarea = document.getElementById("notes");
-
-    const fixedText = 
+<script>
+  const textarea = document.getElementById("notes");
+  const fixedText =
 `=== Instructions (do not edit) ===
 Enter your notes below. The AI will generate 10 multiple-choice questions (with answers) based on your notes.
 
 ----------------------------------
 `;
+  textarea.value = fixedText;
 
-    textarea.value = fixedText;
-
-    textarea.addEventListener("input", () => {
-      if (!textarea.value.startsWith(fixedText)) {
-        textarea.value = fixedText + textarea.value.slice(fixedText.length);
-      }
-    });
-
-    textarea.addEventListener("keydown", (e) => {
-      if (textarea.selectionStart < fixedText.length &&
-        ["Backspace", "ArrowUp", "ArrowLeft"].includes(e.key)) {
-        e.preventDefault();
-        textarea.setSelectionRange(fixedText.length, fixedText.length);
-      }
-    });
-
-    textarea.addEventListener("focus", () => {
-      if (textarea.selectionStart < fixedText.length) {
-        textarea.setSelectionRange(fixedText.length, fixedText.length);
-      }
-    });
-    // 'safer' file upload listener (safer + status text + append after fixedText)
-    (function initUpload() {
-      const fileInput = document.getElementById("fileInput");
-      const statusEl  = document.getElementById("uploadStatus");
-      if (!fileInput || !statusEl) return;
-
-      fileInput.addEventListener("change", async (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) return;
-
-        try {
-          setText(statusEl, "Uploading & extracting...");
-          const extracted = await uploadFile(file);
-
-          const current = textarea.value.startsWith(fixedText)
-            ? textarea.value.slice(fixedText.length)
-            : textarea.value;
-
-          const combined = (current ? (current + "\n\n") : "") + extracted;
-          textarea.value = fixedText + combined;
-
-          // caret to end of editable area
-          textarea.focus();
-          const pos = fixedText.length + combined.length;
-          textarea.setSelectionRange(pos, pos);
-
-          setText(statusEl, `Loaded: ${file.name}`);
-          statusEl.style.color = "#555";
-        } catch (err) {
-          setText(statusEl, `Error: ${err.message}`);
-          statusEl.style.color = "red";
-          console.error(err);
-        }
-      });
-    })();
-
-    function clearNode(node) {
-      while (node.firstChild) node.removeChild(node.firstChild);
+  textarea.addEventListener("input", () => {
+    if (!textarea.value.startsWith(fixedText)) {
+      textarea.value = fixedText + textarea.value.slice(fixedText.length);
     }
-    function setText(node, text) {
-      node.textContent = "";
-      node.appendChild(document.createTextNode(text));
+  });
+
+  textarea.addEventListener("keydown", (e) => {
+    if (textarea.selectionStart < fixedText.length &&
+      ["Backspace", "ArrowUp", "ArrowLeft"].includes(e.key)) {
+      e.preventDefault();
+      textarea.setSelectionRange(fixedText.length, fixedText.length);
     }
+  });
 
-    async function sendPrompt() {
-      const notes = textarea.value.slice(fixedText.length).trim();
-      const quizContainer = document.getElementById("quiz");
-      const submitBtn = document.getElementById("submitBtn");
-
-      clearNode(quizContainer);
-      const p = document.createElement("p");
-      const em = document.createElement("em");
-      em.textContent = "Generating questions...";
-      p.appendChild(em);
-      quizContainer.appendChild(p);
-      submitBtn.style.display = "none";
-
-      // IMPORTANT: match your Cloud Function parser format exactly
-      const systemInstruction = 
-        "You are an educational AI. Based on the provided notes, generate 10 multiple-choice questions in this exact format:\n" +
-        "**1. Question:** What is ...?\n" +
-        "* A) Option 1\n" +
-        "* B) Option 2\n" +
-        "* C) Option 3\n" +
-        "* D) Option 4\n" +
-        "**Correct Answer: B) Option 2**\n\n" +
-        "Repeat for 10 questions.";
-
-      const fullPrompt = `${systemInstruction}\n\nHere are the notes:\n${notes}`;
-
-      try {
-        // 1) Ask Gemini (via Cloud Function) to generate raw MCQ text
-        const genRes = await fetch(`${API_BASE}/generate`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: fullPrompt })
-        });
-        const genData = await genRes.json();
-        if (!genRes.ok) throw new Error(genData.error || `Server error: ${genRes.status}`);
-
-        const mcqText = genData.result || "";
-
-        // 2) Parse the MCQ text on the server into structured JSON
-        const parseRes = await fetch(`${API_BASE}/parse`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mcq_text: mcqText })
-        });
-        const parseData = await parseRes.json();
-        if (!parseRes.ok) throw new Error(parseData.error || `Server error: ${parseRes.status}`);
-
-        const questions = parseData.questions || [];
-        if (questions.length) {
-          renderParsed(questions);
-          submitBtn.style.display = "block";
-        } else {
-          clearNode(quizContainer);
-          const msg = document.createElement("p");
-          msg.textContent = "No questions were generated. Try again.";
-          quizContainer.appendChild(msg);
-        }
-      } catch (err) {
-        clearNode(quizContainer);
-        const msg = document.createElement("p");
-        msg.style.color = "red";
-        msg.textContent = `Error: ${err.message}`;
-        quizContainer.appendChild(msg);
-        console.error(err);
-      }
+  textarea.addEventListener("focus", () => {
+    if (textarea.selectionStart < fixedText.length) {
+      textarea.setSelectionRange(fixedText.length, fixedText.length);
     }
+  });
 
-    // Render server-parsed questions: [{ Question, Options[], Correct }]
-    function renderParsed(questions) {
-      const quizContainer = document.getElementById("quiz");
-      clearNode(quizContainer);
+  document.getElementById("fileInput").addEventListener("change", handleFileUpload);
 
-      questions.forEach((qObj, i) => {
-        const qDiv = document.createElement("div");
-        qDiv.className = "question";
+  async function handleFileUpload() {
+    const file = this.files[0];
+    if (!file) return;
 
-        // Title line: <p><strong>Q1.</strong> Question text</p>
-        const p = document.createElement("p");
-        const strong = document.createElement("strong");
-        strong.textContent = `Q${i + 1}.`;
-        p.appendChild(strong);
-        p.appendChild(document.createTextNode(" " + (qObj.Question || "")));
-        qDiv.appendChild(p);
+    const fileStatus = document.getElementById("fileStatus");
+    fileStatus.textContent = `📎 ${file.name} uploading...`;
 
-        const opts = (qObj.Options || []).slice(0, 4);
-        // Determine the correct LETTER (A/B/C/D) by matching Correct text to an option
-        let correctLetter = "";
-        const optionHtml = opts.map((opt, j) => {
-          const letter = "ABCD"[j];
-          if (!correctLetter && qObj.Correct && opt.trim() === qObj.Correct.trim()) {
-            correctLetter = letter;
-          }
-          // <label class="option"><input ...> A) text</label>
-          const label = document.createElement("label");
-          label.className = "option";
-          const input = document.createElement("input");
-          input.type = "radio";
-          input.name = `q${i + 1}`;
-          input.value = letter;
-          label.appendChild(input);
-          label.appendChild(document.createTextNode(` ${letter}) ${opt}`));
-          qDiv.appendChild(label);
-        });
+    const formData = new FormData();
+    formData.append("file", file);
 
-        qDiv.dataset.correctLetter = correctLetter || ""; // fallback empty if parser couldn't match
-        const result = document.createElement("div");
-        result.className = "result";
-        result.id = `result${i + 1}`;
-        qDiv.appendChild(result);
-        quizContainer.appendChild(qDiv);
-      });
-    }
-
-    function checkAllAnswers() {
-      const questions = document.querySelectorAll(".question");
-      questions.forEach((q) => {
-        const selected = q.querySelector("input[type='radio']:checked");
-        const correctLetter = (q.dataset.correctLetter || "").toUpperCase();
-        const resultDiv = q.querySelector(".result");
-
-        if (!selected) {
-          resultDiv.textContent = "⚠️ Please select an option.";
-          resultDiv.className = "result wrong";
-        } else if (correctLetter && selected.value.toUpperCase() === correctLetter) {
-          resultDiv.textContent = "✅ Correct!";
-          resultDiv.className = "result correct";
-        } else if (correctLetter) {
-          resultDiv.textContent = `❌ Wrong! Correct answer: ${correctLetter}`;
-          resultDiv.className = "result wrong";
-        } else {
-          // If the server didn't return a matchable correct option, inform the user.
-          resultDiv.textContent = "ℹ️ Correct answer unavailable for this item.";
-          resultDiv.className = "result";
-        }
-      });
-    }
-    async function uploadFile(file) {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/upload", {
+    try {
+      const res = await fetch("http://127.0.0.1:5000/upload", {
         method: "POST",
-        body: formData,
+        body: formData
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
-      return data.text;
 
-      // After submitting quiz, mark all nudges as completed
-      try {
-        localStorage.setItem('quizTaken', 'true');
-      } catch (e) {
-        console.warn('Could not save quizTaken flag:', e);
+      if (data.text) {
+        textarea.value += "\n\n" + data.text;
+        fileStatus.textContent = `✅ ${file.name} added`;
+      } else {
+        fileStatus.textContent = "❌ Couldn't extract text";
       }
+    } catch (err) {
+      fileStatus.textContent = "❌ Upload failed";
     }
+  }
 
+  async function sendPrompt() {
+    const notes = textarea.value.slice(fixedText.length).trim();
+    const quizContainer = document.getElementById("quiz");
+    const submitBtn = document.getElementById("submitBtn");
 
-  </script>
+    quizContainer.textContent = "Loading questions...";
+    quizContainer.style.color = "#ffffff";
+    quizContainer.style.fontStyle = "italic";
+    submitBtn.style.display = "none";
+
+    const systemInstruction =
+      "You are an educational AI. Based on the provided notes, generate 10 multiple-choice questions in this exact format: " +
+      "Q1. [question]\nA) [option]\nB) [option]\nC) [option]\nD) [option]\nAnswer: [A/B/C/D]\n\nRepeat for 10 questions.";
+
+    const fullPrompt = `${systemInstruction}\n\nHere are the notes:\n${notes}`;
+
+    try {
+      const response = await fetch("http://127.0.0.1:5000/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: fullPrompt })
+      });
+
+      const data = await response.json();
+
+      if (data.result) {
+        renderQuestions(data.result);
+        submitBtn.style.display = "block";
+      } else {
+        quizContainer.innerHTML = "<p style='color:#f28b82;'>Error: No questions received.</p>";
+      }
+    } catch (err) {
+      quizContainer.innerHTML = `<p style="color:#f28b82;">Error: ${err.message}</p>`;
+    }
+  }
+
+  function renderQuestions(text) {
+    const quizContainer = document.getElementById("quiz");
+    quizContainer.innerHTML = "";
+
+    const questionBlocks = text.split(/Q\d+\./).filter(q => q.trim().length > 0);
+
+    questionBlocks.forEach((block, i) => {
+      const lines = block.trim().split("\n");
+      const questionText = lines[0].trim();
+      const options = lines.slice(1, 5);
+      const answerLine = lines.find(line => line.startsWith("Answer"));
+      const correct = answerLine ? answerLine.split(":")[1].trim().toUpperCase() : null;
+
+      const div = document.createElement("div");
+      div.classList.add("question");
+      div.dataset.correct = correct;
+
+      div.innerHTML = `
+        <p><strong>Q${i + 1}.</strong> ${questionText}</p>
+        ${options.map((opt) => {
+          const val = opt.trim()[0];
+          return `<label class="option"><input type="radio" name="q${i + 1}" value="${val}"> ${opt}</label>`;
+        }).join("")}
+        <div class="result" id="result${i + 1}"></div>
+      `;
+
+      quizContainer.appendChild(div);
+    });
+  }
+
+  function checkAllAnswers() {
+    const questions = document.querySelectorAll(".question");
+
+    questions.forEach((q, i) => {
+      const selected = q.querySelector("input[type='radio']:checked");
+      const correct = q.dataset.correct;
+      const resultDiv = q.querySelector(".result");
+
+      if (!selected) {
+        resultDiv.textContent = "⚠️ Please select an option.";
+        resultDiv.className = "result wrong";
+      } else if (selected.value === correct) {
+        resultDiv.textContent = "✅ Correct!";
+        resultDiv.className = "result correct";
+      } else {
+        resultDiv.textContent = `❌ Wrong! Correct answer: ${correct}`;
+        resultDiv.className = "result wrong";
+      }
+    });
+  }
+</script>
 </body>
 </html>
