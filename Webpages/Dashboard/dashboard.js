@@ -69,6 +69,7 @@ function bootApp(semesterFromFirestore, user) {
         today: new Date(),
         isDarkMode: false,
         quote: { text: 'Loading...', author: '' },
+        isGenerating: false,
         showForm: false,
         showConfig: false,
         modalInstance: null,
@@ -736,34 +737,59 @@ function bootApp(semesterFromFirestore, user) {
             if (this.modalInstance) this.modalInstance.hide();
             this.deleteMode = null;
             this.updateCalendar();
-        },      
-    // handle Vue error before schedule is generated
-      async generateSchedule() {
+        },  
 
-        const payload = this.exportSchedulerData();
-        if (!payload) return;
+      // handle Vue error before schedule is generated
+        async generateSchedule() {
+      // 1. Prevent spam-clicking
+      if (this.isGenerating) return; 
 
-        try {
+      // 2. Set the loading state
+      this.isGenerating = true;
+      console.log("[Scheduler] Starting schedule generation...");
+
+      try {
+          // 3. This is the existing code
+          const payload = this.exportSchedulerData();
+          if (!payload) {
+              // Throw an error to be caught by the finally block
+              // This ensures the button re-enables
+              throw new Error("No scheduler data to export.");
+          }
+
           console.log('[DEBUG] Sending payload to backend...');
-          console.log("[TEST] Payload to backend:", JSON.stringify(payload, null, 2));
           const res = await fetch('/api/generate-schedule', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
           });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+          if (!res.ok) {
+              // Get error details from backend if possible
+              const errorBody = await res.text();
+              throw new Error(`HTTP ${res.status}: ${errorBody}`);
+          }
 
           const data = await res.json();
           console.log('[DEBUG] Received schedule:', data);
+
+          // 4. Apply the schedule
           await this.applyGeneratedSchedule(data);
 
-          alert('Schedule successfully generated!');
-        } catch (error) {
-          console.error('[DEBUG] Error generating schedule:', error);
-          alert('Failed to generate schedule. Please try again.');
-        }
-      },
+          // 5. Success! (Replaced the ugly alert)
+          console.log('Schedule successfully generated!');
+          // We could add a premium "toast" notification here later
 
+      } catch (error) {
+          console.error('[Scheduler] Error generating schedule:', error);
+          // We should show a premium error toast here instead of an alert
+          // alert('Failed to generate schedule. Please try again.');
+
+      } finally {
+          // 6. IMPORTANT: Always re-enable the button
+          this.isGenerating = false;
+      }
+  },
       async clearGeneratedReviews() {
         this.events = this.events.filter(e => e.type !== 'review');
 

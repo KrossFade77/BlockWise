@@ -135,6 +135,13 @@ h1, h4 {
     border-bottom-color: var(--color-accent-gold);
 }
 
+.nav-center a.generating {
+    color: var(--color-accent-gold);
+    font-weight: 600; /* Makes it stand out */
+    cursor: not-allowed;
+    pointer-events: none; /* This visually and functionally disables the link */
+}
+
 /* Simple, clean icon buttons for the navbar */
 .nav-btn {
     background-color: transparent;

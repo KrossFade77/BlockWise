@@ -26,7 +26,9 @@
             <nav class="nav-center d-none d-md-flex">
                 <a href="#" @click.prevent="showForm = true">Add Event</a>
                 <a href="#" @click.prevent="showConfig = !showConfig">Scheduler Settings</a>
-                <a href="#" @click.prevent="generateSchedule">Generate Schedule</a>
+                <a href="#" @click.prevent="generateSchedule" :class="{ 'generating': isGenerating }">
+                {{ isGenerating ? 'Generating...' : 'Generate Schedule' }}
+                </a>
                 <a href="revisedMCQ.html">Quiz Generation</a>
             </nav>
 
