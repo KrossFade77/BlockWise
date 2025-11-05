@@ -250,152 +250,218 @@
 </div>
 
 <script>
-  const textarea = document.getElementById("notes");
-  const fixedText =
+  // Use Firebase Hosting rewrites → Functions (no CORS issues)
+    const API_BASE = "/api";
+    const textarea = document.getElementById("notes");
+
+    const fixedText = 
 `=== Instructions (do not edit) ===
 Enter your notes below. The AI will generate 10 multiple-choice questions (with answers) based on your notes.
 
 ----------------------------------
 `;
-  textarea.value = fixedText;
 
-  textarea.addEventListener("input", () => {
-    if (!textarea.value.startsWith(fixedText)) {
-      textarea.value = fixedText + textarea.value.slice(fixedText.length);
-    }
-  });
+    textarea.value = fixedText;
 
-  textarea.addEventListener("keydown", (e) => {
-    if (textarea.selectionStart < fixedText.length &&
-      ["Backspace", "ArrowUp", "ArrowLeft"].includes(e.key)) {
-      e.preventDefault();
-      textarea.setSelectionRange(fixedText.length, fixedText.length);
-    }
-  });
+    textarea.addEventListener("input", () => {
+      if (!textarea.value.startsWith(fixedText)) {
+        textarea.value = fixedText + textarea.value.slice(fixedText.length);
+      }
+    });
 
-  textarea.addEventListener("focus", () => {
-    if (textarea.selectionStart < fixedText.length) {
-      textarea.setSelectionRange(fixedText.length, fixedText.length);
-    }
-  });
+    textarea.addEventListener("keydown", (e) => {
+      if (textarea.selectionStart < fixedText.length &&
+        ["Backspace", "ArrowUp", "ArrowLeft"].includes(e.key)) {
+        e.preventDefault();
+        textarea.setSelectionRange(fixedText.length, fixedText.length);
+      }
+    });
 
-  document.getElementById("fileInput").addEventListener("change", handleFileUpload);
+    textarea.addEventListener("focus", () => {
+      if (textarea.selectionStart < fixedText.length) {
+        textarea.setSelectionRange(fixedText.length, fixedText.length);
+      }
+    });
 
-  async function handleFileUpload() {
-    const file = this.files[0];
-    if (!file) return;
+    // --- File Upload via /api/upload ---
+    document.getElementById("fileInput").addEventListener("change", async function () {
+      const file = this.files[0];
+      if (!file) return;
 
-    const fileStatus = document.getElementById("fileStatus");
-    fileStatus.textContent = `📎 ${file.name} uploading...`;
+      const fileStatus = document.getElementById("fileStatus");
+      fileStatus.textContent = `📎 ${file.name} uploading...`;
 
-    const formData = new FormData();
-    formData.append("file", file);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
 
-    try {
-      const res = await fetch("http://127.0.0.1:5000/upload", {
-        method: "POST",
-        body: formData
-      });
+        const res = await fetch(`${API_BASE}/upload`, {
+          method: "POST",
+          body: formData,
+        });
 
-      const data = await res.json();
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Upload failed");
 
-      if (data.text) {
-        textarea.value += "\n\n" + data.text;
+        // ✅ Append extracted text to textarea after the instructions
+        const extractedText = data.text || "";
+        const existing = textarea.value;
+        textarea.value = existing + "\n\n" + extractedText;
+
         fileStatus.textContent = `✅ ${file.name} added`;
-      } else {
-        fileStatus.textContent = "❌ Couldn't extract text";
+      } catch (err) {
+        console.error(err);
+        fileStatus.textContent = "❌ Upload failed";
       }
-    } catch (err) {
-      fileStatus.textContent = "❌ Upload failed";
+    });
+
+    function clearNode(node) {
+      while (node.firstChild) node.removeChild(node.firstChild);
     }
-  }
+    function setText(node, text) {
+      node.textContent = "";
+      node.appendChild(document.createTextNode(text));
+    }
 
-  async function sendPrompt() {
-    const notes = textarea.value.slice(fixedText.length).trim();
-    const quizContainer = document.getElementById("quiz");
-    const submitBtn = document.getElementById("submitBtn");
+    async function sendPrompt() {
+      const notes = textarea.value.slice(fixedText.length).trim();
+      const quizContainer = document.getElementById("quiz");
+      const submitBtn = document.getElementById("submitBtn");
 
-    quizContainer.textContent = "Loading questions...";
-    quizContainer.style.color = "#ffffff";
-    quizContainer.style.fontStyle = "italic";
-    submitBtn.style.display = "none";
+      clearNode(quizContainer);
+      const p = document.createElement("p");
+      const em = document.createElement("em");
+      em.textContent = "Generating questions...";
+      p.appendChild(em);
+      quizContainer.appendChild(p);
+      submitBtn.style.display = "none";
 
-    const systemInstruction =
-      "You are an educational AI. Based on the provided notes, generate 10 multiple-choice questions in this exact format: " +
-      "Q1. [question]\nA) [option]\nB) [option]\nC) [option]\nD) [option]\nAnswer: [A/B/C/D]\n\nRepeat for 10 questions.";
+      // IMPORTANT: match your Cloud Function parser format exactly
+      const systemInstruction = 
+        "You are an educational AI. Based on the provided notes, generate 10 multiple-choice questions in this exact format:\n" +
+        "**1. Question:** What is ...?\n" +
+        "* A) Option 1\n" +
+        "* B) Option 2\n" +
+        "* C) Option 3\n" +
+        "* D) Option 4\n" +
+        "**Correct Answer: B) Option 2**\n\n" +
+        "Repeat for 10 questions.";
 
-    const fullPrompt = `${systemInstruction}\n\nHere are the notes:\n${notes}`;
+      const fullPrompt = `${systemInstruction}\n\nHere are the notes:\n${notes}`;
 
-    try {
-      const response = await fetch("http://127.0.0.1:5000/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: fullPrompt })
+      try {
+        // 1) Ask Gemini (via Cloud Function) to generate raw MCQ text
+        const genRes = await fetch(`${API_BASE}/generate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: fullPrompt })
+        });
+        const genData = await genRes.json();
+        if (!genRes.ok) throw new Error(genData.error || `Server error: ${genRes.status}`);
+
+        const mcqText = genData.result || "";
+
+        // 2) Parse the MCQ text on the server into structured JSON
+        const parseRes = await fetch(`${API_BASE}/parse`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ mcq_text: mcqText })
+        });
+        const parseData = await parseRes.json();
+        if (!parseRes.ok) throw new Error(parseData.error || `Server error: ${parseRes.status}`);
+
+        const questions = parseData.questions || [];
+        if (questions.length) {
+          renderParsed(questions);
+          submitBtn.style.display = "block";
+        } else {
+          clearNode(quizContainer);
+          const msg = document.createElement("p");
+          msg.textContent = "No questions were generated. Try again.";
+          quizContainer.appendChild(msg);
+        }
+      } catch (err) {
+        clearNode(quizContainer);
+        const msg = document.createElement("p");
+        msg.style.color = "red";
+        msg.textContent = `Error: ${err.message}`;
+        quizContainer.appendChild(msg);
+        console.error(err);
+      }
+    }
+
+    // Render server-parsed questions: [{ Question, Options[], Correct }]
+    function renderParsed(questions) {
+        const quizContainer = document.getElementById("quiz");
+        clearNode(quizContainer);
+
+        questions.forEach((qObj, i) => {
+          const qDiv = document.createElement("div");
+          qDiv.className = "question";
+
+          const p = document.createElement("p");
+          const strong = document.createElement("strong");
+          strong.textContent = `Q${i + 1}.`;
+          p.appendChild(strong);
+          p.appendChild(document.createTextNode(" " + (qObj.Question || "")));
+          qDiv.appendChild(p);
+
+          const opts = (qObj.Options || []).slice(0, 4);
+          let correctLetter = "";
+
+          opts.forEach((opt, j) => {
+            const letter = "ABCD"[j];
+            if (!correctLetter && qObj.Correct && opt.trim() === qObj.Correct.trim()) {
+              correctLetter = letter;
+            }
+
+            const label = document.createElement("label");
+            label.className = "option";
+
+            const input = document.createElement("input");
+            input.type = "radio";
+            input.name = `q${i + 1}`;
+            input.value = letter;
+            label.appendChild(input);
+            label.appendChild(document.createTextNode(` ${letter}) ${opt}`));
+            qDiv.appendChild(label);
+          });
+
+          qDiv.dataset.correctLetter = correctLetter || "";
+
+          // ✅ Added styled result box
+          const result = document.createElement("div");
+          result.className = "result";
+          qDiv.appendChild(result);
+
+          quizContainer.appendChild(qDiv);
+        });
+      }
+
+
+    function checkAllAnswers() {
+      const questions = document.querySelectorAll(".question");
+      questions.forEach((q) => {
+        const selected = q.querySelector("input[type='radio']:checked");
+        const correctLetter = (q.dataset.correctLetter || "").toUpperCase();
+        const resultDiv = q.querySelector(".result");
+
+        if (!selected) {
+          resultDiv.textContent = "⚠️ Please select an option.";
+          resultDiv.className = "result wrong";
+        } else if (correctLetter && selected.value.toUpperCase() === correctLetter) {
+          resultDiv.textContent = "✅ Correct!";
+          resultDiv.className = "result correct";
+        } else if (correctLetter) {
+          resultDiv.textContent = `❌ Wrong! Correct answer: ${correctLetter}`;
+          resultDiv.className = "result wrong";
+        } else {
+          // If the server didn't return a matchable correct option, inform the user.
+          resultDiv.textContent = "ℹ️ Correct answer unavailable for this item.";
+          resultDiv.className = "result";
+        }
       });
-
-      const data = await response.json();
-
-      if (data.result) {
-        renderQuestions(data.result);
-        submitBtn.style.display = "block";
-      } else {
-        quizContainer.innerHTML = "<p style='color:#f28b82;'>Error: No questions received.</p>";
-      }
-    } catch (err) {
-      quizContainer.innerHTML = `<p style="color:#f28b82;">Error: ${err.message}</p>`;
     }
-  }
-
-  function renderQuestions(text) {
-    const quizContainer = document.getElementById("quiz");
-    quizContainer.innerHTML = "";
-
-    const questionBlocks = text.split(/Q\d+\./).filter(q => q.trim().length > 0);
-
-    questionBlocks.forEach((block, i) => {
-      const lines = block.trim().split("\n");
-      const questionText = lines[0].trim();
-      const options = lines.slice(1, 5);
-      const answerLine = lines.find(line => line.startsWith("Answer"));
-      const correct = answerLine ? answerLine.split(":")[1].trim().toUpperCase() : null;
-
-      const div = document.createElement("div");
-      div.classList.add("question");
-      div.dataset.correct = correct;
-
-      div.innerHTML = `
-        <p><strong>Q${i + 1}.</strong> ${questionText}</p>
-        ${options.map((opt) => {
-          const val = opt.trim()[0];
-          return `<label class="option"><input type="radio" name="q${i + 1}" value="${val}"> ${opt}</label>`;
-        }).join("")}
-        <div class="result" id="result${i + 1}"></div>
-      `;
-
-      quizContainer.appendChild(div);
-    });
-  }
-
-  function checkAllAnswers() {
-    const questions = document.querySelectorAll(".question");
-
-    questions.forEach((q, i) => {
-      const selected = q.querySelector("input[type='radio']:checked");
-      const correct = q.dataset.correct;
-      const resultDiv = q.querySelector(".result");
-
-      if (!selected) {
-        resultDiv.textContent = "⚠️ Please select an option.";
-        resultDiv.className = "result wrong";
-      } else if (selected.value === correct) {
-        resultDiv.textContent = "✅ Correct!";
-        resultDiv.className = "result correct";
-      } else {
-        resultDiv.textContent = `❌ Wrong! Correct answer: ${correct}`;
-        resultDiv.className = "result wrong";
-      }
-    });
-  }
 </script>
 </body>
 </html>
