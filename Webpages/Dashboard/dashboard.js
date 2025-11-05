@@ -184,6 +184,49 @@ function bootApp(semesterFromFirestore, user) {
   			}
    		},
 
+      async checkCourseNudges() {
+        const now = new Date();
+        const courseCount = {}; // track study sessions passed per course
+        // if quiz taken, return function
+        if (localStorage.getItem('quizTaken') === 'true') {
+          const banner = document.getElementById('nudge-banner');
+          if (banner) banner.style.display = 'none';
+          return;
+        }
+        // Count completed study (review) sessions per course
+        this.events.forEach(ev => {
+          if (ev.type === 'review' && ev.courseCode) {
+            const evDate = new Date(ev.date);
+            if (now > evDate) {
+              const code = ev.courseCode.toUpperCase();
+              courseCount[code] = (courseCount[code] || 0) + 1;
+            }
+          }
+        });
+      
+        // Identify courses that crossed 3 completed sessions
+        const triggeredCourses = Object.keys(courseCount).filter(c => courseCount[c] >= 3);
+      
+        const banner = document.getElementById('nudge-banner');
+        const list = document.getElementById('nudge-list');
+        if (!banner || !list) return;
+      
+        // Clear old list safely
+        while (list.firstChild) list.removeChild(list.firstChild);
+      
+        if (triggeredCourses.length > 0) {
+          banner.style.display = 'block';
+          triggeredCourses.forEach(code => {
+            const li = document.createElement('li');
+            li.textContent = `Time to test yourself for ${code}!`;
+            list.appendChild(li);
+          });
+        } else {
+          banner.style.display = 'none';
+        }
+      },
+      
+
       toggleTheme() {
   			this.isDarkMode = !this.isDarkMode;
   			const theme = this.isDarkMode ? 'dark' : 'light';
@@ -1022,7 +1065,8 @@ function bootApp(semesterFromFirestore, user) {
       this.loadSchedulerConfig();
 
       this.loadEventsFromFirestore()
-        .then(() => this.loadReviewsFromFirestore());
+        .then(() => this.loadReviewsFromFirestore())
+        .then(() => this.checkCourseNudges());
 
       const savedTheme = localStorage.getItem('theme') || 'light';
   		this.isDarkMode = (savedTheme === 'dark');
