@@ -292,6 +292,13 @@ Enter your notes below. The AI will generate 10 multiple-choice questions (with 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Upload failed");
       return data.text;
+
+      // After submitting quiz, mark all nudges as completed
+      try {
+        localStorage.setItem('quizTaken', 'true');
+      } catch (e) {
+        console.warn('Could not save quizTaken flag:', e);
+      }
     }
 
 

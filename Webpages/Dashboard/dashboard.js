@@ -69,6 +69,7 @@ function bootApp(semesterFromFirestore, user) {
         today: new Date(),
         isDarkMode: false,
         quote: { text: 'Loading...', author: '' },
+        isGenerating: false,
         showForm: false,
         showConfig: false,
         modalInstance: null,
@@ -182,6 +183,49 @@ function bootApp(semesterFromFirestore, user) {
   				this.quote.author = 'Winston Churchill';
   			}
    		},
+
+      async checkCourseNudges() {
+        const now = new Date();
+        const courseCount = {}; // track study sessions passed per course
+        // if quiz taken, return function
+        if (localStorage.getItem('quizTaken') === 'true') {
+          const banner = document.getElementById('nudge-banner');
+          if (banner) banner.style.display = 'none';
+          return;
+        }
+        // Count completed study (review) sessions per course
+        this.events.forEach(ev => {
+          if (ev.type === 'review' && ev.courseCode) {
+            const evDate = new Date(ev.date);
+            if (now > evDate) {
+              const code = ev.courseCode.toUpperCase();
+              courseCount[code] = (courseCount[code] || 0) + 1;
+            }
+          }
+        });
+      
+        // Identify courses that crossed 3 completed sessions
+        const triggeredCourses = Object.keys(courseCount).filter(c => courseCount[c] >= 3);
+      
+        const banner = document.getElementById('nudge-banner');
+        const list = document.getElementById('nudge-list');
+        if (!banner || !list) return;
+      
+        // Clear old list safely
+        while (list.firstChild) list.removeChild(list.firstChild);
+      
+        if (triggeredCourses.length > 0) {
+          banner.style.display = 'block';
+          triggeredCourses.forEach(code => {
+            const li = document.createElement('li');
+            li.textContent = `Time to test yourself for ${code}!`;
+            list.appendChild(li);
+          });
+        } else {
+          banner.style.display = 'none';
+        }
+      },
+      
 
       toggleTheme() {
   			this.isDarkMode = !this.isDarkMode;
@@ -736,34 +780,59 @@ function bootApp(semesterFromFirestore, user) {
             if (this.modalInstance) this.modalInstance.hide();
             this.deleteMode = null;
             this.updateCalendar();
-        },      
-    // handle Vue error before schedule is generated
-      async generateSchedule() {
+        },  
 
-        const payload = this.exportSchedulerData();
-        if (!payload) return;
+      // handle Vue error before schedule is generated
+        async generateSchedule() {
+      // 1. Prevent spam-clicking
+      if (this.isGenerating) return; 
 
-        try {
+      // 2. Set the loading state
+      this.isGenerating = true;
+      console.log("[Scheduler] Starting schedule generation...");
+
+      try {
+          // 3. This is the existing code
+          const payload = this.exportSchedulerData();
+          if (!payload) {
+              // Throw an error to be caught by the finally block
+              // This ensures the button re-enables
+              throw new Error("No scheduler data to export.");
+          }
+
           console.log('[DEBUG] Sending payload to backend...');
-          console.log("[TEST] Payload to backend:", JSON.stringify(payload, null, 2));
           const res = await fetch('/api/generate-schedule', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
           });
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+          if (!res.ok) {
+              // Get error details from backend if possible
+              const errorBody = await res.text();
+              throw new Error(`HTTP ${res.status}: ${errorBody}`);
+          }
 
           const data = await res.json();
           console.log('[DEBUG] Received schedule:', data);
+
+          // 4. Apply the schedule
           await this.applyGeneratedSchedule(data);
 
-          alert('Schedule successfully generated!');
-        } catch (error) {
-          console.error('[DEBUG] Error generating schedule:', error);
-          alert('Failed to generate schedule. Please try again.');
-        }
-      },
+          // 5. Success! (Replaced the ugly alert)
+          console.log('Schedule successfully generated!');
+          // We could add a premium "toast" notification here later
 
+      } catch (error) {
+          console.error('[Scheduler] Error generating schedule:', error);
+          // We should show a premium error toast here instead of an alert
+          // alert('Failed to generate schedule. Please try again.');
+
+      } finally {
+          // 6. IMPORTANT: Always re-enable the button
+          this.isGenerating = false;
+      }
+  },
       async clearGeneratedReviews() {
         this.events = this.events.filter(e => e.type !== 'review');
 
@@ -996,7 +1065,8 @@ function bootApp(semesterFromFirestore, user) {
       this.loadSchedulerConfig();
 
       this.loadEventsFromFirestore()
-        .then(() => this.loadReviewsFromFirestore());
+        .then(() => this.loadReviewsFromFirestore())
+        .then(() => this.checkCourseNudges());
 
       const savedTheme = localStorage.getItem('theme') || 'light';
   		this.isDarkMode = (savedTheme === 'dark');
