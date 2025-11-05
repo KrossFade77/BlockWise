@@ -157,32 +157,21 @@ function bootApp(semesterFromFirestore, user) {
     methods: {
 
       async fetchQuote() {
-  			try {
-  				// Note: The 'no-cors' mode is a workaround for this specific API 
-  				// when called from a local file. It might need adjustment.
-  				// We'll use a proxy to bypass local CORS issues.
-  				const response = await fetch('https://proxy.cors.sh/https://zenquotes.io/api/random');
-  
-  				if (!response.ok) {
-  					throw new Error('Network response was not ok');
-  				}
-  
-  				const data = await response.json();
-  
-  				if (data && data[0]) {
-  					this.quote.text = data[0].q; // The quote text
-  					this.quote.author = data[0].a; // The author
-  				} else {
-  					this.quote.text = 'Stay focused and keep going.';
-  					this.quote.author = 'BlockWise';
-  				}
-  			} catch (error) {
-  				console.error('Failed to fetch quote:', error);
-  				// Fallback quote in case of an API error
-  				this.quote.text = 'Success is not final, failure is not fatal: it is the courage to continue that counts.';
-  				this.quote.author = 'Winston Churchill';
-  			}
-   		},
+        try {
+          const response = await fetch('https://api.adviceslip.com/advice');
+          if (!response.ok) throw new Error('Network response was not ok');
+
+          const data = await response.json();
+
+          this.quote.text   = data.slip.advice;     // ← "Genius is one per cent..."
+          this.quote.author = 'BlockWise';      // ← "Thomas Edison"
+
+        } catch (error) {
+          console.error('Failed to fetch quote:', error);
+          this.quote.text   = 'One block at a time builds empires.';
+          this.quote.author = 'BlockWise';
+        }
+      },
 
       async checkCourseNudges() {
         const now = new Date();
