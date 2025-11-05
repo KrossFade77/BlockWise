@@ -219,6 +219,12 @@ function futureClassesWithin(moduleName, afterISO, untilISO, lessonsIndex) {
   return n;
 }
 
+function startOfWeekSunday(dateISO) {
+  const d = new Date(dateISO);
+  const day = d.getDay(); // 0 = Sun, 1 = Mon, ... 6 = Sat
+  d.setDate(d.getDate() - day);
+  return d.toISOString().slice(0, 10);
+}
 
 /**
  * Core entry: build the spaced-repetition schedule.
@@ -237,7 +243,7 @@ function buildSchedule(payload) {
   if (!cfg?.dailyStart || !cfg?.dailyEnd) throw new Error('Missing schedulerConfig.dailyStart/dailyEnd');
 
   const weeks           = Math.max(1, Number(cfg.weeksToGenerate || 4));
-  const horizonStartISO = maxISO(todayISO(), semester.startDate);
+  const horizonStartISO = maxISO(startOfWeekSunday(todayISO()), semester.startDate);
   const horizonEndISO   = minISO(addDaysISO(horizonStartISO, weeks * 7), semester.endDate);
   if (horizonStartISO > horizonEndISO) return { sessions: [] };
 
