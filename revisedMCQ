@@ -11,18 +11,29 @@
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: 'Poppins', sans-serif;
+      font-family:'Poppins', sans-serif;
     }
 
+    /* ✅ Black–grey animated gradient background */
     body {
+      padding: 40px 20px;
       display: flex;
       justify-content: center;
       align-items: flex-start;
       min-height: 100vh;
-      background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+      background: linear-gradient(-45deg, #000000, #1c1c1c, #3a3a3a, #1c1c1c);
       background-size: 400% 400%;
-      animation: change 12s ease-in-out infinite;
-      padding: 40px 20px;
+      animation: change 10s ease-in-out infinite;
+      transition: background-image 1s ease-in-out;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.10);
+      z-index: -1;
     }
 
     @keyframes change {
@@ -32,110 +43,190 @@
     }
 
     .container {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
       width: 800px;
       max-width: 100%;
-      padding: 30px;
+      background: #2a2b2e;
+      padding: 28px;
       border-radius: 12px;
-      box-shadow: 0 5px 45px rgba(0,0,0,0.15);
+      border: 1px solid #3c4043;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
     }
 
-    h2, h3 {
+    /* Gold tab around heading */
+    .heading-tab {
+      display: inline-block;
+        width: fit-content;      /* Shrink to fit content */
+      
+      border-radius: 8px;
+      padding: 6px 20px;
+      margin: 0 auto 20px auto; /
+    }
+
+    .heading-tab h2 {
+    margin: 0;
+    font-weight: 700;          
+    color: goldenrod;            
+    font-style: italic;            
+    font-size: 30px;               
+    letter-spacing: 1px;          
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3); 
+    }
+
+    h3 {
       text-align: center;
-      font-weight: 400;
-      margin-bottom: 15px;
-      color: #333;
+      font-weight: 500;
+      margin-bottom: 18px;
+      color: #e8eaed;
     }
 
     textarea {
       width: 100%;
-      margin-bottom: 15px;
-      font-family: monospace;
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      outline: none;
       height: 180px;
-      resize: vertical;
-    }
-
-    button {
-      width: 100%;
       padding: 12px;
       border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      font-size: 16px;
-      font-weight: 500;
-      color: white;
-      background-color: #23a6d5;
-      transition: 0.3s;
-      margin-bottom: 15px;
+      background: #3c4043;
+      border: 1px solid #5f6368;
+      color: #e8eaed;
+      resize: vertical;
+      transition: 0.15s border;
+      font-family: monospace;
     }
 
-    button:hover {
-      background-color: #348dad;
+    textarea:focus {
+      border-color: #8ab4f8;
+      box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.25);
+      outline: none;
+    }
+
+    /* Generate MCQs button styling */
+    .generate-btn {
+      background: none;
+      border: none;
+      color: goldenrod;
+      font-size: 15px;
+      font-style: italic;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 6px 0;
+      margin: 15px auto; /* centers it horizontally */
+      display: block;
+      text-align: center;
+      transition: color 0.2s ease, text-shadow 0.2s ease;
+    }
+
+    .generate-btn:hover {
+        color: #ffffff;
+        text-shadow: 0 0 8px gold;
+        background: none;
+    }
+
+    /* Upload button styling */
+    label[for="fileInput"] {
+      background: #d4af37; /* gold background */
+      border: none;
+      color: black; /* plus sign color */
+      font-size: 22px;
+      font-style: none;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+
+    label[for="fileInput"]:hover {
+      color: #d4af37; /* gold plus sign on hover */
+      background: black; /* background changes on hover */
+      box-shadow: 0 0 8px rgba(138,180,248,0.5);
     }
 
     .question {
-      background: white;
+      background: #303134;
+      border: 1px solid #3c4043;
+      padding: 16px;
       border-radius: 12px;
-      padding: 15px;
-      margin: 20px 0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      margin: 18px 0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      color: #e8eaed;
     }
 
     .option {
       display: block;
-      margin: 5px 0;
+      margin: 6px 0;
       font-size: 14px;
+      color: #e8eaed;
     }
 
     .result {
       font-weight: 500;
-      margin-top: 8px;
+      margin-top: 6px;
     }
 
-    .correct { color: #2ecc71; }
-    .wrong { color: #e74c3c; }
+    .correct { color: #81c995; }
+    .wrong { color: #f28b82; }
 
     @media (max-width: 767px) {
       .container { padding: 20px; }
       textarea { height: 150px; }
     }
+
+    .container > p {
+      color: #ffffff;
+      font-weight: 400;
+      text-align: center;
+    }
+
+    #submitBtn {
+  display: none; /* keep hidden initially */
+  background-color: goldenrod;
+  color: #2a2b2e;
+  font-weight: 700;
+  font-size: 16px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 15px auto;
+  display: block; /* will still work when JS sets it to block */
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+#submitBtn:hover {
+  background-color: #d4af37; /* slightly brighter gold */
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(218, 165, 32, 0.7);
+}
+
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>AI MCQ Generator</h2>
+  <div style ="text-align: center;">
+  <div class="heading-tab">
+    <h2>AI MCQ Generator</h2>
+  </div>
+  </div>
   <p style="text-align:center;">Paste notes or upload files. The AI will generate 10 MCQs.</p>
 
   <textarea id="notes"></textarea>
 
-  <!-- + File Upload Button -->
-  <div style="display:flex; justify-content:flex-end; margin-top:-8px; margin-bottom:5px;">
-    <label for="fileInput" style="
-      cursor:pointer;
-      background:#23a6d5;
-      color:white;
-      width:38px;
-      height:38px;
-      border-radius:50%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:22px;
-      user-select:none;
-      font-weight:600;
-    ">+</label>
-
-    <input type="file" id="fileInput" accept=".txt,.pdf,.docx" style="display:none;">
+  <div style="display:flex; flex-direction:column; align-items:flex-end; margin-top:8px; margin-bottom:5px;">
+    <div style="display:flex; align-items:center;">
+      <label for="fileInput" style="margin-left:8px;">+</label>
+      <input type="file" id="fileInput" accept=".txt,.pdf,.docx" style="display:none;">
+    </div>
+    <span style="font-size:12px; color:#bbb; margin-top:2px;">Upload your notes!</span>
   </div>
-  <p id="fileStatus" style="text-align:right; font-size:13px; color:#555;"></p>
 
-  <button onclick="sendPrompt()">Generate MCQs</button>
+  <p id="fileStatus" style="text-align:right; font-size:13px; color:#bbb;"></p>
+
+  <button class="generate-btn" onclick="sendPrompt()">Generate MCQs</button>
 
   <h3>Generated Questions:</h3>
   <div id="quiz"></div>
@@ -144,14 +235,12 @@
 
 <script>
   const textarea = document.getElementById("notes");
-
   const fixedText =
 `=== Instructions (do not edit) ===
 Enter your notes below. The AI will generate 10 multiple-choice questions (with answers) based on your notes.
 
 ----------------------------------
 `;
-
   textarea.value = fixedText;
 
   textarea.addEventListener("input", () => {
@@ -174,7 +263,6 @@ Enter your notes below. The AI will generate 10 multiple-choice questions (with 
     }
   });
 
-  // ✅ Handle file uploads
   document.getElementById("fileInput").addEventListener("change", handleFileUpload);
 
   async function handleFileUpload() {
@@ -211,7 +299,9 @@ Enter your notes below. The AI will generate 10 multiple-choice questions (with 
     const quizContainer = document.getElementById("quiz");
     const submitBtn = document.getElementById("submitBtn");
 
-    quizContainer.innerHTML = "<p><em>Loading questions...</em></p>";
+    quizContainer.textContent = "Loading questions...";
+    quizContainer.style.color = "#ffffff";
+    quizContainer.style.fontStyle = "italic";
     submitBtn.style.display = "none";
 
     const systemInstruction =
@@ -233,10 +323,10 @@ Enter your notes below. The AI will generate 10 multiple-choice questions (with 
         renderQuestions(data.result);
         submitBtn.style.display = "block";
       } else {
-        quizContainer.innerHTML = "<p style='color:red;'>Error: No questions received.</p>";
+        quizContainer.innerHTML = "<p style='color:#f28b82;'>Error: No questions received.</p>";
       }
     } catch (err) {
-      quizContainer.innerHTML = `<p style="color:red;">Error: ${err.message}</p>`;
+      quizContainer.innerHTML = `<p style="color:#f28b82;">Error: ${err.message}</p>`;
     }
   }
 
