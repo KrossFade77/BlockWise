@@ -18,11 +18,11 @@ This determines how much total review time the module receives per week.
 
 | Module Weight | Meaning | Weekly Total Review Time |
 |---|---|---|
-| 5 | Core / content-heavy / exam-critical | **4.5 hours/week** |
-| 4 | Strong emphasis needed | **3.5 hours/week** |
-| 3 | Standard module | **2.5 hours/week** |
-| 2 | Lower priority | **1.5 hours/week** |
-| 1 | Minimal reinforcement | **1.0 hour/week** |
+| 5 | Core / content-heavy / exam-critical | ~**4.5 hours/week** |
+| 4 | Strong emphasis needed | ~**3.5 hours/week** |
+| 3 | Standard module | ~**2.5 hours/week** |
+| 2 | Lower priority | ~**1.5 hours/week** |
+| 1 | Minimal reinforcement | ~**1.0 hour/week** |
 
 This ensures **higher-weight modules are reviewed more often and for longer** 
 
@@ -74,9 +74,5 @@ For each review session:
 4. If blocked → shift later in 30-minute increments
 5. If day is fully blocked → **defer to the next nearest appropriate day**
 6. Ensure session still falls within reasonable spacing tolerance
-
-### Review Session Deferrence
-When the schedule does not permit the insertion of a review session / study block,
-the scheduler pushes the block back by a day, with a maximum limit of 1d deferrence.
 
 ---
